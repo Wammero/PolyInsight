@@ -1,0 +1,240 @@
+package bot
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/mymmrac/telego"
+	tu "github.com/mymmrac/telego/telegoutil"
+
+	"polymarket_go/internal/db"
+	"polymarket_go/internal/metrics"
+	"polymarket_go/internal/polymarket"
+)
+
+// SendAlert broadcasts a whale alert to all subscribers that match their personal filters.
+// followers is the set of chatIDs who are watching this wallet (from the follow cache).
+func SendAlert(
+	ctx context.Context,
+	b *telego.Bot,
+	p polymarket.TradePayload,
+	trades int,
+	stats *polymarket.WalletStats,
+	meta *polymarket.CategoryMeta,
+	startTime time.Time,
+	baseURL string,
+	followers []int64,
+) {
+	subs, err := db.AllSubscribers(ctx)
+	if err != nil || len(subs) == 0 {
+		return
+	}
+
+	volume := p.Size * p.Price
+	odds := 1.0 / p.Price
+	probability := p.Price * 100
+
+	// Short ID for click tracking (first 12 chars of tx hash).
+	shortID := p.TransactionHash
+	if len(shortID) > 12 {
+		shortID = shortID[:12]
+	}
+
+	marketURL := fmt.Sprintf("https://polymarket.com/market/%s?utm_source=whalebot&utm_medium=telegram&utm_campaign=alert&tid=%s",
+		p.Slug, p.TransactionHash)
+
+	// Register alert for click tracking (first occurrence wins due to ON CONFLICT DO NOTHING).
+	db.RegisterAlert(ctx, shortID, p.ProxyWallet, p.Slug, marketURL, 0)
+
+	// Build tracking URL: use redirect server if baseURL is set, else direct.
+	trackURL := marketURL
+	if baseURL != "" {
+		trackURL = fmt.Sprintf("%s/r/%s", baseURL, shortID)
+	}
+
+	name := p.Pseudonym
+	if name == "" {
+		walletShort := p.ProxyWallet
+		if len(walletShort) > 8 {
+			walletShort = walletShort[:6] + "..." + walletShort[len(walletShort)-4:]
+		}
+		name = walletShort
+	}
+
+	// Win-rate line with wins/losses counts (closed positions only).
+	wrLine := "  🎯 Результат: —"
+	if stats.WinRate >= 0 {
+		wrLine = fmt.Sprintf("  🎯 Результат: %d✅ / %d❌ (%.0f%%)", stats.Wins, stats.Losses, stats.WinRate)
+	}
+
+	// P&L line — all-time, optional.
+	playerBlock := wrLine
+	if stats.TotalPnL > -999998 {
+		playerBlock += fmt.Sprintf("\n  💼 P&L: %s", fmtPnL(stats.TotalPnL))
+	}
+
+	text := fmt.Sprintf(
+		"%s <b>КИТ-НОВИЧОК: %s</b>\n\n"+
+			"💰 <b>Сумма:</b> $%.0f\n"+
+			"📊 <b>Коэф:</b> x%.2f (%.1f%%)\n"+
+			"📈 <b>Всего сделок:</b> %d\n"+
+			"👤 <b>Игрок:</b> <code>%s</code>\n"+
+			"%s\n\n"+
+			"🎯 <b>Рынок:</b> %s\n"+
+			"📌 <b>Ставка на:</b> %s\n\n"+
+			"🔗 <b>Ссылки:</b>\n"+
+			"• <a href='https://polymarket.com/profile/%s'>Профиль Polymarket</a>\n"+
+			"• <a href='https://debank.com/profile/%s'>Портфель DeBank</a>\n"+
+			"• <a href='https://polygonscan.com/tx/%s'>PolygonScan</a>",
+		meta.Emoji, strings.ToUpper(meta.Label),
+		volume, odds, probability,
+		trades,
+		name,
+		playerBlock,
+		p.Title,
+		strings.ToUpper(p.Outcome),
+		p.ProxyWallet, p.ProxyWallet, p.TransactionHash,
+	)
+
+	// Build a lookup set of follower chatIDs to avoid extra DB calls per subscriber.
+	followerSet := make(map[int64]bool, len(followers))
+	for _, id := range followers {
+		followerSet[id] = true
+	}
+
+	for _, sub := range subs {
+		// Per-user amount filter.
+		if volume < sub.MinAmount {
+			continue
+		}
+		// Per-user trade count filter.
+		if trades >= sub.MaxTrades {
+			continue
+		}
+		// Per-user odds filter.
+		if odds < sub.MinOdds {
+			continue
+		}
+		// Per-user category filter (empty = all).
+		if len(sub.Categories) > 0 {
+			allowed := false
+			for _, cat := range sub.Categories {
+				if cat == meta.Category {
+					allowed = true
+					break
+				}
+			}
+			if !allowed {
+				continue
+			}
+		}
+
+		isWatch := followerSet[sub.ChatID]
+		kb := AlertKeyboard(p.ProxyWallet, shortID, isWatch)
+
+		// Build message with inline keyboard + tracking URL button.
+		msg := tu.Message(tu.ID(sub.ChatID), text+
+			fmt.Sprintf("\n• <a href='%s'>Перейти к сделке ↗</a>", trackURL)).
+			WithParseMode(telego.ModeHTML).
+			WithLinkPreviewOptions(&telego.LinkPreviewOptions{IsDisabled: true}).
+			WithReplyMarkup(kb)
+
+		b.SendMessage(ctx, msg)
+	}
+
+	metrics.PerfectAlerts.Inc()
+	metrics.EventLag.Observe(time.Since(startTime).Seconds())
+}
+
+// SendFollowAlert sends a dedicated notification to users who are following this wallet.
+// Sent regardless of filter settings — followers always want to know about their wallets.
+func SendFollowAlert(
+	ctx context.Context,
+	b *telego.Bot,
+	p polymarket.TradePayload,
+	trades int,
+	stats *polymarket.WalletStats,
+	meta *polymarket.CategoryMeta,
+	followers []int64,
+) {
+	volume := p.Size * p.Price
+	odds := 1.0 / p.Price
+
+	name := p.Pseudonym
+	if name == "" {
+		if len(p.ProxyWallet) > 10 {
+			name = p.ProxyWallet[:6] + "..." + p.ProxyWallet[len(p.ProxyWallet)-4:]
+		} else {
+			name = p.ProxyWallet
+		}
+	}
+
+	wrLine := "—"
+	if stats.WinRate >= 0 {
+		wrLine = fmt.Sprintf("%d✅/%d❌ (%.0f%%)", stats.Wins, stats.Losses, stats.WinRate)
+	}
+
+	text := fmt.Sprintf(
+		"🔔 <b>Ваш кит совершил сделку!</b>\n\n"+
+			"👤 <code>%s</code>\n"+
+			"💰 <b>Сумма:</b> $%.0f  📊 <b>Коэф:</b> x%.2f\n"+
+			"🎯 <b>Ставка на:</b> %s\n"+
+			"📝 <b>Рынок:</b> %s\n"+
+			"📈 <b>Всего сделок:</b> %d  🏆 <b>WR:</b> %s\n\n"+
+			"🔗 <a href='https://polymarket.com/profile/%s'>Профиль на Polymarket</a>",
+		name,
+		volume, odds,
+		strings.ToUpper(p.Outcome),
+		p.Title,
+		trades, wrLine,
+		p.ProxyWallet,
+	)
+
+	for _, chatID := range followers {
+		b.SendMessage(ctx, tu.Message(tu.ID(chatID), text).
+			WithParseMode(telego.ModeHTML).
+			WithLinkPreviewOptions(&telego.LinkPreviewOptions{IsDisabled: true}))
+	}
+}
+
+// fmtPnL formats a P&L value. Returns "—" when unknown (-999999 sentinel).
+func fmtPnL(v float64) string {
+	if v <= -999998 {
+		return "—"
+	}
+	sign := "+"
+	if v < 0 {
+		sign = ""
+	}
+	return fmt.Sprintf("%s$%.0f", sign, v)
+}
+
+// FormatWalletStats returns a formatted text block for a wallet's statistics.
+func FormatWalletStats(wallet string, stats *polymarket.WalletStats) string {
+	wrStr := "—"
+	if stats.WinRate >= 0 {
+		wrStr = fmt.Sprintf("%d✅ / %d❌ (%.1f%%)", stats.Wins, stats.Losses, stats.WinRate)
+	}
+
+	walletShort := wallet
+	if len(walletShort) > 12 {
+		walletShort = wallet[:6] + "..." + wallet[len(wallet)-4:]
+	}
+
+	return fmt.Sprintf(
+		"📊 <b>Статистика кошелька</b>\n"+
+			"<code>%s</code>\n\n"+
+			"📈 Всего сделок: <b>%d</b>\n"+
+			"🎯 Победы/Поражения: <b>%s</b>\n"+
+			"💹 P&L (ALL): <b>%s</b>\n\n"+
+			"🔗 <a href='https://polymarket.com/profile/%s'>Профиль Polymarket</a>\n"+
+			"🏦 <a href='https://debank.com/profile/%s'>Портфель DeBank</a>",
+		walletShort,
+		stats.TotalTrades,
+		wrStr,
+		fmtPnL(stats.TotalPnL),
+		wallet, wallet,
+	)
+}
