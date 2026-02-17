@@ -1,0 +1,19 @@
+# Секреты — НИКОГДА не коммитить!
+.env
+
+# Бинарники
+bot
+/bot
+
+# Go
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
