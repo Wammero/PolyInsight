@@ -141,4 +141,4 @@ The grant would be used to:
 ## Links
 
 - **Telegram Mini App (settings UI):** https://wammero.github.io/poly_site/
-- **Source code:** private (available for review upon request)
+- **Source code:** https://github.com/Wammero/PolyInsight
