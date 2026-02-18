@@ -38,7 +38,7 @@ The bot solves this by doing three things:
 - **Click tracking** — optional redirect server to track link engagement per alert
 
 ### Technical
-- **WebSocket → worker pool** architecture: 16 parallel Go goroutines consume a 5,000-item buffered channel, ensuring no trades are missed even during traffic spikes
+- **WebSocket → worker pool** architecture: 32 parallel Go goroutines consume a 5,000-item buffered channel, ensuring no trades are missed even during traffic spikes
 - **In-memory follow cache** — watchlist data is cached in memory and refreshed every 30 seconds; no database query per trade for real-time follow detection
 - **Redis caching** — wallet stats cached 15 minutes, trade counts 10 minutes; Polymarket API is never hammered
 - **PostgreSQL** for persistent user data (settings, watchlist, click tracking)
@@ -56,7 +56,7 @@ Polymarket WebSocket
    jobs channel (5,000 buffer)
         │
    ┌────┴────┐
-   │ Workers │  ×16 goroutines
+   │ Workers │  ×32 goroutines
    └────┬────┘
         │  per trade:
         │  1. Volume pre-filter (global minimum)
@@ -64,10 +64,10 @@ Polymarket WebSocket
         │  3. Category metadata (Redis-cached)
         │  4. Trade count → newbie check (Redis-cached)
         │  5. Wallet stats (Redis-cached, 15 min)
-        │  6. SendAlert → per-user filter + DB fan-out
+        │  6. SendAlert → per-user filter + rate-limited queue
         │  7. SendFollowAlert → in-memory follow cache lookup
         ▼
-   Telegram Bot API
+   Telegram Bot API (25 msg/sec rate-limited queue)
 ```
 
 ---
@@ -91,7 +91,7 @@ Polymarket WebSocket
 
 All data comes exclusively from public Polymarket APIs:
 
-- **WebSocket** `wss://ws-subscriptions-clob.polymarket.com/ws/market` — live trade feed
+- **WebSocket** `wss://ws-live-data.polymarket.com` — live trade feed
 - `data-api.polymarket.com/traded?user=` — trade count per wallet
 - `data-api.polymarket.com/v1/leaderboard?user=&timePeriod=ALL` — all-time P&L
 - `data-api.polymarket.com/closed-positions?user=&limit=500` — win/loss breakdown
@@ -122,6 +122,7 @@ The bot is fully functional and deployed. It is actively processing Polymarket t
 - ✅ Wallet statistics (P&L, win rate, trade history) via Polymarket API
 - ✅ Wallet watchlist with real-time follow notifications (max 10 wallets)
 - ✅ Telegram Mini App for settings (GitHub Pages, no server required)
+- ✅ Rate-limited Telegram send queue (25 msg/sec, capacity 20,000)
 - ✅ Prometheus/Grafana monitoring
 - ✅ Full Docker Compose deployment
 
@@ -142,3 +143,4 @@ The grant would be used to:
 
 - **Telegram Mini App (settings UI):** https://wammero.github.io/poly_site/
 - **Source code:** https://github.com/Wammero/PolyInsight
+- **Telegram bot:** @PolySecretbot

@@ -8,7 +8,7 @@ import (
 const MaxWatchlistSize = 10
 
 // ErrWatchlistFull is returned when a user tries to add a 6th wallet to follow.
-var ErrWatchlistFull = errors.New("watchlist is full (max 5)")
+var ErrWatchlistFull = errors.New("watchlist is full (max 10)")
 
 // Watchlist holds a single watchlist entry.
 type Watchlist struct {
@@ -50,10 +50,12 @@ func GetWatchlist(ctx context.Context, chatID int64) ([]Watchlist, error) {
 	var list []Watchlist
 	for rows.Next() {
 		var w Watchlist
-		rows.Scan(&w.ID, &w.ChatID, &w.Wallet, &w.Label)
+		if err := rows.Scan(&w.ID, &w.ChatID, &w.Wallet, &w.Label); err != nil {
+			continue
+		}
 		list = append(list, w)
 	}
-	return list, nil
+	return list, rows.Err()
 }
 
 func IsWatched(ctx context.Context, chatID int64, wallet string) (bool, error) {
@@ -61,6 +63,12 @@ func IsWatched(ctx context.Context, chatID int64, wallet string) (bool, error) {
 	err := DB.QueryRowContext(ctx,
 		"SELECT COUNT(*) FROM watchlist WHERE chat_id=$1 AND wallet=$2", chatID, wallet).Scan(&count)
 	return count > 0, err
+}
+
+func CountWatchlistEntries(ctx context.Context) (int, error) {
+	var n int
+	err := DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM watchlist").Scan(&n)
+	return n, err
 }
 
 // GetAllWatchedWallets returns a map of wallet → []chatID for all watchlist entries.
@@ -74,8 +82,10 @@ func GetAllWatchedWallets(ctx context.Context) (map[string][]int64, error) {
 	for rows.Next() {
 		var wallet string
 		var chatID int64
-		rows.Scan(&wallet, &chatID)
+		if err := rows.Scan(&wallet, &chatID); err != nil {
+			continue
+		}
 		m[wallet] = append(m[wallet], chatID)
 	}
-	return m, nil
+	return m, rows.Err()
 }

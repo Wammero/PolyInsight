@@ -26,6 +26,12 @@ func Unsubscribe(ctx context.Context, chatID int64) error {
 	return err
 }
 
+func CountActiveUsers(ctx context.Context) (int, error) {
+	var n int
+	err := DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM users").Scan(&n)
+	return n, err
+}
+
 // AllSubscribers returns all users with their personal filter settings.
 // Users without custom settings get the defaults (1000/$5 trades/1.15 odds/all cats).
 func AllSubscribers(ctx context.Context) ([]Subscriber, error) {
@@ -53,5 +59,5 @@ func AllSubscribers(ctx context.Context) ([]Subscriber, error) {
 		sub.Categories = []string(cats)
 		subs = append(subs, sub)
 	}
-	return subs, nil
+	return subs, rows.Err()
 }

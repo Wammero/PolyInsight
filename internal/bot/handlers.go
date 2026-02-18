@@ -78,6 +78,10 @@ func handleMessage(b *telego.Bot, msg *telego.Message) {
 	case "/settings", "⚙️ Настройки":
 		handleSettingsCommand(b, ctx, chatID)
 
+	case "⬅️ Главное меню":
+		b.SendMessage(ctx, tu.Message(tu.ID(chatID), "🏠 Главное меню").
+			WithReplyMarkup(MainMenuKeyboard()))
+
 	case "/watchlist", "👁 Слежка":
 		handleWatchlistCommand(b, ctx, chatID)
 
@@ -123,6 +127,7 @@ func handleSettingsCommand(b *telego.Bot, ctx context.Context, chatID int64) {
 					Text:   "🌐 Открыть настройки",
 					WebApp: &telego.WebAppInfo{URL: appURL},
 				}},
+				{{Text: "⬅️ Главное меню"}},
 			},
 			ResizeKeyboard:  true,
 			OneTimeKeyboard: true,
@@ -563,6 +568,11 @@ func handleWebAppData(b *telego.Bot, msg *telego.Message) {
 		b.SendMessage(ctx, tu.Message(tu.ID(chatID),
 			fmt.Sprintf("🔔 Теперь вы следите за:\n<code>%s</code>", body.Wallet)).
 			WithParseMode(telego.ModeHTML).WithReplyMarkup(MainMenuKeyboard()))
+
+	case "back":
+		// User closed Mini App without saving — restore main keyboard.
+		b.SendMessage(ctx, tu.Message(tu.ID(chatID), "🏠 Главное меню").
+			WithReplyMarkup(MainMenuKeyboard()))
 
 	default:
 		b.SendMessage(ctx, tu.Message(tu.ID(chatID), "❌ Неизвестное действие").

@@ -53,6 +53,7 @@ func StartSocket(jobs chan<- []byte) error {
 		select {
 		case jobs <- msgBytes:
 		default:
+			metrics.WSDropped.Inc()
 		}
 	}
 }

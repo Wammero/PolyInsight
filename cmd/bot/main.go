@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -19,6 +20,8 @@ import (
 	"polymarket_go/internal/tracker"
 )
 
+const bufferSize = 5000
+
 func main() {
 	cfg := config.Load()
 
@@ -32,10 +35,22 @@ func main() {
 		log.Fatalf("telegram init: %v", err)
 	}
 
-	jobs := make(chan []byte, 5000)
+	jobs := make(chan []byte, bufferSize)
+
+	// Constant metrics set once at startup.
+	metrics.BufferCapacity.Set(bufferSize)
+	metrics.WorkerCount.Set(32)
 
 	// Mini App URL for settings keyboard Web App button.
 	botpkg.SetMiniAppURL(cfg.MiniAppURL)
+
+	// In-memory subscriber cache — eliminates DB query per whale event.
+	// ActiveUsers metric is updated inside StartSubCache on every refresh.
+	botpkg.StartSubCache()
+
+	// Rate-limited Telegram send queue — 25 msg/sec, capacity 20 000.
+	// All outgoing alerts go through Enqueue(), never directly via b.SendMessage.
+	botpkg.StartSendQueue(tgBot)
 
 	// Telegram update handlers (commands + callback queries + Mini App data).
 	go botpkg.StartHandlers(tgBot)
@@ -51,7 +66,7 @@ func main() {
 		log.Fatal(http.ListenAndServe(":2112", mux))
 	}()
 
-	// Buffer fill gauge.
+	// Buffer fill gauge — updated every second.
 	go func() {
 		for {
 			metrics.BufferGauge.Set(float64(len(jobs)))
@@ -59,8 +74,19 @@ func main() {
 		}
 	}()
 
-	// Worker pool: 16 parallel trade processors.
-	for i := 1; i <= 16; i++ {
+	// Watchlist entries gauge — updated every 30s.
+	go func() {
+		ctx := context.Background()
+		for {
+			if entries, err := db.CountWatchlistEntries(ctx); err == nil {
+				metrics.WatchlistEntries.Set(float64(entries))
+			}
+			time.Sleep(30 * time.Second)
+		}
+	}()
+
+	// Worker pool: 32 parallel trade processors.
+	for i := 1; i <= 32; i++ {
 		go tracker.Worker(i, jobs, tgBot, cfg)
 	}
 
@@ -70,12 +96,13 @@ func main() {
 			log.Println("Connecting to Polymarket WebSocket...")
 			if err := tracker.StartSocket(jobs); err != nil {
 				log.Printf("WebSocket error: %v", err)
+				metrics.WSReconnects.Inc()
 			}
 			time.Sleep(5 * time.Second)
 		}
 	}()
 
-	// Start in-memory watchlist cache (refreshed every 30s) for real-time follow detection.
+	// In-memory watchlist cache — refreshed every 30s for real-time follow detection.
 	tracker.StartFollowCache()
 
 	sig := make(chan os.Signal, 1)

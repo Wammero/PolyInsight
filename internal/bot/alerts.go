@@ -14,6 +14,7 @@ import (
 	"polymarket_go/internal/polymarket"
 )
 
+
 // SendAlert broadcasts a whale alert to all subscribers that match their personal filters.
 // followers is the set of chatIDs who are watching this wallet (from the follow cache).
 func SendAlert(
@@ -27,8 +28,8 @@ func SendAlert(
 	baseURL string,
 	followers []int64,
 ) {
-	subs, err := db.AllSubscribers(ctx)
-	if err != nil || len(subs) == 0 {
+	subs := GetSubscribers() // from in-memory cache, no DB call
+	if len(subs) == 0 {
 		return
 	}
 
@@ -134,17 +135,16 @@ func SendAlert(
 		isWatch := followerSet[sub.ChatID]
 		kb := AlertKeyboard(p.ProxyWallet, shortID, isWatch)
 
-		// Build message with inline keyboard + tracking URL button.
 		msg := tu.Message(tu.ID(sub.ChatID), text+
 			fmt.Sprintf("\n• <a href='%s'>Перейти к сделке ↗</a>", trackURL)).
 			WithParseMode(telego.ModeHTML).
 			WithLinkPreviewOptions(&telego.LinkPreviewOptions{IsDisabled: true}).
 			WithReplyMarkup(kb)
 
-		b.SendMessage(ctx, msg)
+		Enqueue(msg) // rate-limited queue: 25 msg/sec, never exceeds Telegram limit
+		metrics.PerfectAlerts.Inc()
 	}
 
-	metrics.PerfectAlerts.Inc()
 	metrics.EventLag.Observe(time.Since(startTime).Seconds())
 }
 
@@ -193,7 +193,7 @@ func SendFollowAlert(
 	)
 
 	for _, chatID := range followers {
-		b.SendMessage(ctx, tu.Message(tu.ID(chatID), text).
+		Enqueue(tu.Message(tu.ID(chatID), text).
 			WithParseMode(telego.ModeHTML).
 			WithLinkPreviewOptions(&telego.LinkPreviewOptions{IsDisabled: true}))
 	}

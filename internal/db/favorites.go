@@ -34,10 +34,12 @@ func GetFavorites(ctx context.Context, chatID int64) ([]Favorite, error) {
 	var favs []Favorite
 	for rows.Next() {
 		var f Favorite
-		rows.Scan(&f.ID, &f.ChatID, &f.Wallet, &f.Label)
+		if err := rows.Scan(&f.ID, &f.ChatID, &f.Wallet, &f.Label); err != nil {
+			continue
+		}
 		favs = append(favs, f)
 	}
-	return favs, nil
+	return favs, rows.Err()
 }
 
 

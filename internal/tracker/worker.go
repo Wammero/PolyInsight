@@ -37,6 +37,7 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 
 		// Global pre-filter: only absolute minimum volume.
 		if volume < cfg.MinWhaleAmount {
+			metrics.FilteredVolume.Inc()
 			continue
 		}
 		metrics.WhaleEvents.Inc()
@@ -45,18 +46,21 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 
 		// Title ban-word filter.
 		if containsBanWord(strings.ToLower(p.Title)) {
+			metrics.FilteredBanWord.Inc()
 			continue
 		}
 
 		// Fetch category metadata (cached).
 		meta := polymarket.GetMeta(ctx, p.Slug, client)
 		if meta == nil {
+			metrics.FilteredNoMeta.Inc()
 			continue
 		}
 
 		// Newbie detection: fetch trade count.
 		trades := polymarket.GetTradeCount(ctx, client, p.ProxyWallet)
 		if trades == 999 {
+			metrics.FilteredAPIErr.Inc()
 			continue // API error — skip to avoid false positives
 		}
 
@@ -72,7 +76,10 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 		// Send dedicated "your followed wallet traded" notification to followers.
 		if len(followers) > 0 {
 			bot.SendFollowAlert(ctx, b, p, trades, stats, meta, followers)
+			metrics.FollowAlerts.Add(float64(len(followers)))
 		}
+
+		metrics.WorkerDuration.Observe(time.Since(startTime).Seconds())
 	}
 }
 

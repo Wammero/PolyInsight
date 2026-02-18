@@ -32,9 +32,6 @@ services:
     build: .
     container_name: polymarket_prometheus_bot
     restart: always
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
     depends_on:
       db:
         condition: service_healthy
@@ -62,8 +59,14 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: poly_grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
     volumes:
       - grafanadata:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
     ports:
       - "3001:3000"
     depends_on:
