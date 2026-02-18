@@ -72,6 +72,32 @@ Polymarket WebSocket
 
 ---
 
+## Telegram Bot Interface
+
+### Alert message with inline buttons
+
+Every whale alert includes wallet context (P&L, win rate, trade count), market info, odds, and one-click buttons to view stats, follow the wallet, or jump to the trade on Polymarket:
+
+![Telegram Interface](assets/telegram_interface.png)
+
+---
+
+## Settings & Watchlist (Mini App)
+
+### Notification settings
+
+Users configure filters directly in Telegram via a web-based Mini App — minimum bet amount, newbie threshold, minimum odds, and market category selection:
+
+![App Settings](assets/app_settings.png)
+
+### Wallet watchlist
+
+The watchlist section shows all followed wallets and allows removing them in bulk. Followed wallets bypass all filters — their trades are always delivered instantly:
+
+![App Follow](assets/app_follow.png)
+
+---
+
 ## Monitoring Dashboard
 
 Real-time Prometheus + Grafana dashboard — WebSocket throughput, pipeline filtering, alert delivery latency, active users, and system metrics (CPU, RAM, network):

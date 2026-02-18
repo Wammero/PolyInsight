@@ -15,6 +15,16 @@ import (
 	"polymarket_go/internal/polymarket"
 )
 
+// sharedClient is reused across all workers for connection pool efficiency.
+// 32 workers share one pool instead of maintaining 32 separate pools.
+var sharedClient = &http.Client{
+	Timeout: 10 * time.Second,
+	Transport: &http.Transport{
+		MaxIdleConnsPerHost: 40,
+		IdleConnTimeout:     90 * time.Second,
+	},
+}
+
 // wsMessage is the raw Polymarket WebSocket envelope.
 type wsMessage struct {
 	Type    string                  `json:"type"`
@@ -23,7 +33,6 @@ type wsMessage struct {
 
 // Worker reads raw trade bytes from jobs, applies filters, and dispatches alerts.
 func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
-	client := &http.Client{Timeout: 10 * time.Second}
 	ctx := context.Background()
 
 	for raw := range jobs {
@@ -51,21 +60,21 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 		}
 
 		// Fetch category metadata (cached).
-		meta := polymarket.GetMeta(ctx, p.Slug, client)
+		meta := polymarket.GetMeta(ctx, p.Slug, sharedClient)
 		if meta == nil {
 			metrics.FilteredNoMeta.Inc()
 			continue
 		}
 
 		// Newbie detection: fetch trade count.
-		trades := polymarket.GetTradeCount(ctx, client, p.ProxyWallet)
+		trades := polymarket.GetTradeCount(ctx, sharedClient, p.ProxyWallet)
 		if trades == 999 {
 			metrics.FilteredAPIErr.Inc()
 			continue // API error — skip to avoid false positives
 		}
 
 		// Fetch enriched wallet stats for display.
-		stats := polymarket.GetWalletStats(ctx, client, p.ProxyWallet)
+		stats := polymarket.GetWalletStats(ctx, sharedClient, p.ProxyWallet)
 
 		// Get watchlist followers for this wallet (from in-memory cache).
 		followers := GetFollowers(p.ProxyWallet)

@@ -4,10 +4,15 @@
   "schemaVersion": 39,
   "version": 1,
   "refresh": "5s",
-  "time": { "from": "now-1h", "to": "now" },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
   "timezone": "browser",
   "graphTooltip": 1,
-  "tags": ["polymarket"],
+  "tags": [
+    "polymarket"
+  ],
   "templating": {
     "list": [
       {
@@ -21,92 +26,142 @@
     ]
   },
   "panels": [
-
     {
       "id": 1,
       "type": "row",
-      "title": "🌊 WebSocket",
-      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "title": "\ud83c\udf0a WebSocket",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
       "collapsed": false
     },
-
     {
       "id": 2,
-      "title": "WS сообщений/сек",
+      "title": "WS \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0439/\u0441\u0435\u043a",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 0, "y": 1, "w": 8, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 8,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
         }
       },
       "targets": [
         {
           "expr": "rate(bot_ws_messages_total[1m])",
-          "legendFormat": "Получено"
+          "legendFormat": "\u041f\u043e\u043b\u0443\u0447\u0435\u043d\u043e"
         },
         {
           "expr": "rate(bot_ws_dropped_total[1m])",
-          "legendFormat": "Сброшено (буфер полон)"
+          "legendFormat": "\u0421\u0431\u0440\u043e\u0448\u0435\u043d\u043e (\u0431\u0443\u0444\u0435\u0440 \u043f\u043e\u043b\u043e\u043d)"
         }
       ]
     },
-
     {
       "id": 3,
-      "title": "Буфер задач",
+      "title": "\u0411\u0443\u0444\u0435\u0440 \u0437\u0430\u0434\u0430\u0447",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 8, "y": 1, "w": 8, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 8,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "min": 0,
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 15 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          }
         }
       },
       "options": {
-        "tooltip": { "mode": "multi" }
+        "tooltip": {
+          "mode": "multi"
+        }
       },
       "targets": [
         {
           "expr": "bot_worker_buffer_messages",
-          "legendFormat": "Заполнено"
+          "legendFormat": "\u0417\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e"
         },
         {
           "expr": "bot_worker_buffer_capacity",
-          "legendFormat": "Ёмкость (5000)"
+          "legendFormat": "\u0401\u043c\u043a\u043e\u0441\u0442\u044c (5000)"
         }
       ]
     },
-
     {
       "id": 7,
-      "title": "Воркеров активно",
+      "title": "\u0412\u043e\u0440\u043a\u0435\u0440\u043e\u0432 \u0430\u043a\u0442\u0438\u0432\u043d\u043e",
       "type": "stat",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 16, "y": 1, "w": 2, "h": 4 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 2,
+        "h": 4
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "fixedColor": "blue", "mode": "fixed" }
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          }
         }
       },
       "targets": [
-        { "expr": "bot_worker_count", "legendFormat": "Воркеров" }
+        {
+          "expr": "bot_worker_count",
+          "legendFormat": "\u0412\u043e\u0440\u043a\u0435\u0440\u043e\u0432"
+        }
       ]
     },
-
     {
       "id": 4,
-      "title": "Заполнение буфера %",
+      "title": "\u0417\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u0431\u0443\u0444\u0435\u0440\u0430 %",
       "type": "gauge",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 18, "y": 1, "w": 2, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 1,
+        "w": 2,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
@@ -115,10 +170,22 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": 0 },
-              { "color": "yellow", "value": 50 },
-              { "color": "orange", "value": 75 },
-              { "color": "red", "value": 90 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "orange",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           }
         }
@@ -126,126 +193,228 @@
       "targets": [
         {
           "expr": "bot_worker_buffer_messages / bot_worker_buffer_capacity * 100",
-          "legendFormat": "Буфер %"
+          "legendFormat": "\u0411\u0443\u0444\u0435\u0440 %"
         }
       ]
     },
-
     {
       "id": 5,
-      "title": "WS переподключения",
+      "title": "WS \u043f\u0435\u0440\u0435\u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f",
       "type": "stat",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 20, "y": 1, "w": 4, "h": 4 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": 0 },
-              { "color": "yellow", "value": 3 },
-              { "color": "red", "value": 10 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
             ]
           }
         }
       },
       "targets": [
-        { "expr": "bot_ws_reconnects_total", "legendFormat": "Переподключений" }
+        {
+          "expr": "bot_ws_reconnects_total",
+          "legendFormat": "\u041f\u0435\u0440\u0435\u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0439"
+        }
       ]
     },
-
     {
       "id": 6,
-      "title": "Сброшено сообщений",
+      "title": "\u0421\u0431\u0440\u043e\u0448\u0435\u043d\u043e \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0439",
       "type": "stat",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 20, "y": 5, "w": 4, "h": 4 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 5,
+        "w": 4,
+        "h": 4
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": 0 },
-              { "color": "yellow", "value": 1 },
-              { "color": "red", "value": 100 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
             ]
           }
         }
       },
       "targets": [
-        { "expr": "bot_ws_dropped_total", "legendFormat": "Сброшено" }
+        {
+          "expr": "bot_ws_dropped_total",
+          "legendFormat": "\u0421\u0431\u0440\u043e\u0448\u0435\u043d\u043e"
+        }
       ]
     },
-
     {
       "id": 10,
       "type": "row",
-      "title": "🤖 Pipeline",
-      "gridPos": { "x": 0, "y": 9, "w": 24, "h": 1 },
+      "title": "\ud83e\udd16 Pipeline",
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      },
       "collapsed": false
     },
-
     {
       "id": 8,
-      "title": "Очередь отправки TG",
+      "title": "\u041e\u0447\u0435\u0440\u0435\u0434\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0438 TG",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 0, "y": 10, "w": 8, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "min": 0,
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 15 },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green",  "value": 0 },
-              { "color": "yellow", "value": 100 },
-              { "color": "red",    "value": 500 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
             ]
           }
         }
       },
       "targets": [
-        { "expr": "bot_send_queue_size",                    "legendFormat": "В очереди" },
-        { "expr": "rate(bot_send_queue_dropped_total[1m])", "legendFormat": "Сброшено/с" }
+        {
+          "expr": "bot_send_queue_size",
+          "legendFormat": "\u0412 \u043e\u0447\u0435\u0440\u0435\u0434\u0438"
+        },
+        {
+          "expr": "rate(bot_send_queue_dropped_total[1m])",
+          "legendFormat": "\u0421\u0431\u0440\u043e\u0448\u0435\u043d\u043e/\u0441"
+        }
       ]
     },
-
     {
       "id": 11,
-      "title": "События кита / алертов в сек",
+      "title": "\u0421\u043e\u0431\u044b\u0442\u0438\u044f \u043a\u0438\u0442\u0430 / \u0430\u043b\u0435\u0440\u0442\u043e\u0432 \u0432 \u0441\u0435\u043a",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 8, "y": 10, "w": 8, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
         }
       },
       "targets": [
-        { "expr": "rate(bot_whale_events_total[1m])",   "legendFormat": "🐋 Киты (>порога)" },
-        { "expr": "rate(bot_perfect_alerts_total[1m])", "legendFormat": "📣 Алерты TG" },
-        { "expr": "rate(bot_follow_alerts_total[1m])",  "legendFormat": "👁 Слежка-алерты" }
+        {
+          "expr": "rate(bot_whale_events_total[1m])",
+          "legendFormat": "\ud83d\udc0b \u041a\u0438\u0442\u044b (>\u043f\u043e\u0440\u043e\u0433\u0430)"
+        },
+        {
+          "expr": "rate(bot_perfect_alerts_total[1m])",
+          "legendFormat": "\ud83d\udce3 \u0410\u043b\u0435\u0440\u0442\u044b TG"
+        },
+        {
+          "expr": "rate(bot_follow_alerts_total[1m])",
+          "legendFormat": "\ud83d\udc41 \u0421\u043b\u0435\u0436\u043a\u0430-\u0430\u043b\u0435\u0440\u0442\u044b"
+        }
       ]
     },
-
     {
       "id": 12,
-      "title": "Время обработки сделки",
+      "title": "\u0412\u0440\u0435\u043c\u044f \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438 \u0441\u0434\u0435\u043b\u043a\u0438",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 16, "y": 10, "w": 8, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
         }
       },
       "targets": [
@@ -263,177 +432,323 @@
         },
         {
           "expr": "bot_event_processed_lag_seconds{quantile=\"0.5\"}",
-          "legendFormat": "Lag p50 (WS→TG)"
+          "legendFormat": "Lag p50 (WS\u2192TG)"
         },
         {
           "expr": "bot_event_processed_lag_seconds{quantile=\"0.9\"}",
-          "legendFormat": "Lag p90 (WS→TG)"
+          "legendFormat": "Lag p90 (WS\u2192TG)"
         }
       ]
     },
-
     {
       "id": 20,
       "type": "row",
-      "title": "🚫 Фильтрация",
-      "gridPos": { "x": 0, "y": 18, "w": 24, "h": 1 },
+      "title": "\ud83d\udeab \u0424\u0438\u043b\u044c\u0442\u0440\u0430\u0446\u0438\u044f",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 1
+      },
       "collapsed": false
     },
-
     {
       "id": 21,
-      "title": "Воронка фильтрации (событий/сек)",
+      "title": "\u0412\u043e\u0440\u043e\u043d\u043a\u0430 \u0444\u0438\u043b\u044c\u0442\u0440\u0430\u0446\u0438\u0438 (\u0441\u043e\u0431\u044b\u0442\u0438\u0439/\u0441\u0435\u043a)",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 0, "y": 19, "w": 14, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 14,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 8 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
         }
       },
       "targets": [
-        { "expr": "rate(bot_ws_messages_total[1m])",                   "legendFormat": "📥 Из WS" },
-        { "expr": "rate(bot_whale_events_total[1m])",                  "legendFormat": "🐋 >порога объёма" },
-        { "expr": "rate(bot_trades_filtered_volume_total[1m])",        "legendFormat": "❌ Объём мал" },
-        { "expr": "rate(bot_trades_filtered_banword_total[1m])",       "legendFormat": "❌ Стоп-слово" },
-        { "expr": "rate(bot_trades_filtered_no_meta_total[1m])",       "legendFormat": "❌ Нет метадаты" },
-        { "expr": "rate(bot_trades_filtered_api_error_total[1m])",     "legendFormat": "❌ API ошибка" },
-        { "expr": "rate(bot_perfect_alerts_total[1m])",                "legendFormat": "✅ Алертов отправлено" }
+        {
+          "expr": "rate(bot_ws_messages_total[1m])",
+          "legendFormat": "\ud83d\udce5 \u0418\u0437 WS"
+        },
+        {
+          "expr": "rate(bot_whale_events_total[1m])",
+          "legendFormat": "\ud83d\udc0b >\u043f\u043e\u0440\u043e\u0433\u0430 \u043e\u0431\u044a\u0451\u043c\u0430"
+        },
+        {
+          "expr": "rate(bot_trades_filtered_volume_total[1m])",
+          "legendFormat": "\u274c \u041e\u0431\u044a\u0451\u043c \u043c\u0430\u043b"
+        },
+        {
+          "expr": "rate(bot_trades_filtered_banword_total[1m])",
+          "legendFormat": "\u274c \u0421\u0442\u043e\u043f-\u0441\u043b\u043e\u0432\u043e"
+        },
+        {
+          "expr": "rate(bot_trades_filtered_no_meta_total[1m])",
+          "legendFormat": "\u274c \u041d\u0435\u0442 \u043c\u0435\u0442\u0430\u0434\u0430\u0442\u044b"
+        },
+        {
+          "expr": "rate(bot_trades_filtered_api_error_total[1m])",
+          "legendFormat": "\u274c API \u043e\u0448\u0438\u0431\u043a\u0430"
+        },
+        {
+          "expr": "rate(bot_perfect_alerts_total[1m])",
+          "legendFormat": "\u2705 \u0410\u043b\u0435\u0440\u0442\u043e\u0432 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e"
+        }
       ]
     },
-
     {
       "id": 22,
-      "title": "Отфильтровано за всё время",
+      "title": "\u041e\u0442\u0444\u0438\u043b\u044c\u0442\u0440\u043e\u0432\u0430\u043d\u043e \u0437\u0430 \u0432\u0441\u0451 \u0432\u0440\u0435\u043c\u044f",
       "type": "bargauge",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 14, "y": 19, "w": 10, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 19,
+        "w": 10,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "blue", "value": 0 }]
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
           }
         }
       },
       "options": {
         "orientation": "horizontal",
-        "reduceOptions": { "calcs": ["lastNotNull"] }
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       },
       "targets": [
-        { "expr": "bot_trades_filtered_volume_total",    "legendFormat": "Объём мал" },
-        { "expr": "bot_trades_filtered_banword_total",   "legendFormat": "Стоп-слово" },
-        { "expr": "bot_trades_filtered_no_meta_total",   "legendFormat": "Нет метадаты" },
-        { "expr": "bot_trades_filtered_api_error_total", "legendFormat": "API ошибка" }
+        {
+          "expr": "bot_trades_filtered_volume_total",
+          "legendFormat": "\u041e\u0431\u044a\u0451\u043c \u043c\u0430\u043b"
+        },
+        {
+          "expr": "bot_trades_filtered_banword_total",
+          "legendFormat": "\u0421\u0442\u043e\u043f-\u0441\u043b\u043e\u0432\u043e"
+        },
+        {
+          "expr": "bot_trades_filtered_no_meta_total",
+          "legendFormat": "\u041d\u0435\u0442 \u043c\u0435\u0442\u0430\u0434\u0430\u0442\u044b"
+        },
+        {
+          "expr": "bot_trades_filtered_api_error_total",
+          "legendFormat": "API \u043e\u0448\u0438\u0431\u043a\u0430"
+        }
       ]
     },
-
     {
       "id": 30,
       "type": "row",
-      "title": "👥 Пользователи",
-      "gridPos": { "x": 0, "y": 27, "w": 24, "h": 1 },
+      "title": "\ud83d\udc65 \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438",
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 1
+      },
       "collapsed": false
     },
-
     {
       "id": 31,
-      "title": "Активных пользователей",
+      "title": "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439",
       "type": "stat",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 0, "y": 28, "w": 6, "h": 5 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 6,
+        "h": 5
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "fixedColor": "blue", "mode": "fixed" }
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          }
         }
       },
       "targets": [
-        { "expr": "bot_active_users", "legendFormat": "Пользователей" }
+        {
+          "expr": "bot_active_users",
+          "legendFormat": "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439"
+        }
       ]
     },
-
     {
       "id": 32,
-      "title": "Слежек (watchlist)",
+      "title": "\u0421\u043b\u0435\u0436\u0435\u043a (watchlist)",
       "type": "stat",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 6, "y": 28, "w": 6, "h": 5 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 28,
+        "w": 6,
+        "h": 5
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "fixedColor": "purple", "mode": "fixed" }
+          "color": {
+            "fixedColor": "purple",
+            "mode": "fixed"
+          }
         }
       },
       "targets": [
-        { "expr": "bot_watchlist_entries", "legendFormat": "Слежек" }
+        {
+          "expr": "bot_watchlist_entries",
+          "legendFormat": "\u0421\u043b\u0435\u0436\u0435\u043a"
+        }
       ]
     },
-
     {
       "id": 33,
-      "title": "Кликов по ссылкам",
+      "title": "\u041a\u043b\u0438\u043a\u043e\u0432 \u043f\u043e \u0441\u0441\u044b\u043b\u043a\u0430\u043c",
       "type": "stat",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 12, "y": 28, "w": 6, "h": 5 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 6,
+        "h": 5
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "fixedColor": "green", "mode": "fixed" }
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          }
         }
       },
       "targets": [
-        { "expr": "bot_link_clicks_total", "legendFormat": "Клики" }
+        {
+          "expr": "bot_link_clicks_total",
+          "legendFormat": "\u041a\u043b\u0438\u043a\u0438"
+        }
       ]
     },
-
     {
       "id": 34,
-      "title": "Всего алертов",
+      "title": "\u0412\u0441\u0435\u0433\u043e \u0430\u043b\u0435\u0440\u0442\u043e\u0432",
       "type": "stat",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 18, "y": 28, "w": 6, "h": 5 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 28,
+        "w": 6,
+        "h": 5
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "fixedColor": "orange", "mode": "fixed" }
+          "color": {
+            "fixedColor": "orange",
+            "mode": "fixed"
+          }
         }
       },
       "targets": [
-        { "expr": "bot_perfect_alerts_total", "legendFormat": "Алертов" }
+        {
+          "expr": "bot_perfect_alerts_total",
+          "legendFormat": "\u0410\u043b\u0435\u0440\u0442\u043e\u0432"
+        }
       ]
     },
-
     {
       "id": 40,
       "type": "row",
-      "title": "💻 Система (Node Exporter)",
-      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 1 },
+      "title": "\ud83d\udcbb \u0421\u0438\u0441\u0442\u0435\u043c\u0430 (Node Exporter)",
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 24,
+        "h": 1
+      },
       "collapsed": false
     },
-
     {
       "id": 41,
       "title": "CPU %",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 0, "y": 34, "w": 6, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 6,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "min": 0,
           "max": 100,
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 15 },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green",  "value": 0 },
-              { "color": "yellow", "value": 70 },
-              { "color": "red",    "value": 90 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           }
         }
@@ -441,53 +756,86 @@
       "targets": [
         {
           "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
-          "legendFormat": "CPU использование"
+          "legendFormat": "CPU \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u0435"
         }
       ]
     },
-
     {
       "id": 42,
-      "title": "Память %",
+      "title": "\u041f\u0430\u043c\u044f\u0442\u044c %",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 6, "y": 34, "w": 6, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 34,
+        "w": 6,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "min": 0,
           "max": 100,
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 15 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          }
         }
       },
       "targets": [
         {
           "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
-          "legendFormat": "RAM занято"
+          "legendFormat": "RAM \u0437\u0430\u043d\u044f\u0442\u043e"
         }
       ]
     },
-
     {
       "id": 43,
-      "title": "Диск %",
+      "title": "\u0414\u0438\u0441\u043a %",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 12, "y": 34, "w": 6, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 6,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "min": 0,
           "max": 100,
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 15 },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green",  "value": 0 },
-              { "color": "yellow", "value": 75 },
-              { "color": "red",    "value": 90 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           }
         }
@@ -495,92 +843,177 @@
       "targets": [
         {
           "expr": "(1 - node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"}) * 100",
-          "legendFormat": "Диск занято"
+          "legendFormat": "\u0414\u0438\u0441\u043a \u0437\u0430\u043d\u044f\u0442\u043e"
         }
       ]
     },
-
     {
       "id": 44,
-      "title": "Сеть (байт/сек)",
+      "title": "\u0421\u0435\u0442\u044c (\u0431\u0430\u0439\u0442/\u0441\u0435\u043a)",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 18, "y": 34, "w": 6, "h": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 34,
+        "w": 6,
+        "h": 8
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "Bps",
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
         }
       },
       "targets": [
         {
           "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[1m])",
-          "legendFormat": "↓ Входящий {{device}}"
+          "legendFormat": "\u2193 \u0412\u0445\u043e\u0434\u044f\u0449\u0438\u0439 {{device}}"
         },
         {
           "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[1m])",
-          "legendFormat": "↑ Исходящий {{device}}"
+          "legendFormat": "\u2191 \u0418\u0441\u0445\u043e\u0434\u044f\u0449\u0438\u0439 {{device}}"
         }
       ]
     },
-
     {
       "id": 50,
       "title": "Load Average",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 0, "y": 42, "w": 8, "h": 7 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 8,
+        "h": 7
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2
+          }
         }
       },
       "targets": [
-        { "expr": "node_load1",  "legendFormat": "1m" },
-        { "expr": "node_load5",  "legendFormat": "5m" },
-        { "expr": "node_load15", "legendFormat": "15m" }
+        {
+          "expr": "node_load1",
+          "legendFormat": "1m"
+        },
+        {
+          "expr": "node_load5",
+          "legendFormat": "5m"
+        },
+        {
+          "expr": "node_load15",
+          "legendFormat": "15m"
+        }
       ]
     },
-
     {
       "id": 51,
-      "title": "Память (байты)",
+      "title": "\u041f\u0430\u043c\u044f\u0442\u044c (\u0431\u0430\u0439\u0442\u044b)",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 8, "y": 42, "w": 8, "h": 7 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 42,
+        "w": 8,
+        "h": 7
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "bytes",
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
         }
       },
       "targets": [
-        { "expr": "node_memory_MemTotal_bytes",     "legendFormat": "Всего" },
-        { "expr": "node_memory_MemAvailable_bytes", "legendFormat": "Доступно" },
-        { "expr": "node_memory_MemFree_bytes",      "legendFormat": "Свободно" }
+        {
+          "expr": "node_memory_MemTotal_bytes",
+          "legendFormat": "\u0412\u0441\u0435\u0433\u043e"
+        },
+        {
+          "expr": "node_memory_MemAvailable_bytes",
+          "legendFormat": "\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e"
+        },
+        {
+          "expr": "node_memory_MemFree_bytes",
+          "legendFormat": "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u043e"
+        }
       ]
     },
-
     {
       "id": 52,
       "title": "Uptime",
       "type": "stat",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "x": 16, "y": 42, "w": 8, "h": 7 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 42,
+        "w": 8,
+        "h": 7
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "color": { "fixedColor": "green", "mode": "fixed" }
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          }
         }
       },
       "targets": [
-        { "expr": "time() - node_boot_time_seconds", "legendFormat": "Uptime" }
+        {
+          "expr": "time() - node_boot_time_seconds",
+          "legendFormat": "Uptime"
+        }
       ]
     }
-
-  ]
+  ],
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "3h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d"
+    ]
+  }
 }

@@ -53,3 +53,13 @@ func Enqueue(params *telego.SendMessageParams) {
 		metrics.SendQueueDropped.Inc()
 	}
 }
+
+// DrainAndClose waits up to 30 seconds for the send queue to empty, then closes it.
+// Call this during graceful shutdown so in-flight messages are not lost.
+func DrainAndClose() {
+	deadline := time.Now().Add(30 * time.Second)
+	for len(sendCh) > 0 && time.Now().Before(deadline) {
+		time.Sleep(100 * time.Millisecond)
+	}
+	close(sendCh)
+}

@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -15,6 +16,10 @@ func Init(url string) {
 	if err != nil {
 		log.Fatalf("db open: %v", err)
 	}
+	// Tune connection pool to avoid exhausting PostgreSQL's max_connections.
+	DB.SetMaxOpenConns(20)
+	DB.SetMaxIdleConns(5)
+	DB.SetConnMaxLifetime(5 * time.Minute)
 	if err = DB.Ping(); err != nil {
 		log.Fatalf("db ping: %v", err)
 	}

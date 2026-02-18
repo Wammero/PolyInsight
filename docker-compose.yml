@@ -4,13 +4,13 @@ services:
     container_name: polymarket_prometheus_db
     restart: always
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: "${POSTGRES_USER:-whale_user}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-changeme_postgres}"
       POSTGRES_DB: whale_tracker
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d whale_tracker"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-whale_user} -d whale_tracker"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -19,14 +19,14 @@ services:
     image: redis:7-alpine
     container_name: polymarket_prometheus_cache
     restart: always
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-changeme_redis}"]
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme_redis}", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
     volumes:
       - redisdata:/data
-    
 
   bot:
     build: .
@@ -38,11 +38,10 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: "host=db port=5432 user=user password=password dbname=whale_tracker sslmode=disable"
-      REDIS_URL: "redis:6379"
+      DATABASE_URL: "host=db port=5432 user=${POSTGRES_USER:-whale_user} password=${POSTGRES_PASSWORD:-changeme_postgres} dbname=whale_tracker sslmode=disable"
+      REDIS_URL: "redis://:${REDIS_PASSWORD:-changeme_redis}@redis:6379/0"
       TELEGRAM_TOKEN: "${TELEGRAM_TOKEN}"
       MIN_WHALE_AMOUNT: ${MIN_WHALE_AMOUNT:-100}
-      NEWBIE_THRESHOLD: ${NEWBIE_THRESHOLD:-500}
       MIN_ODDS: ${MIN_ODDS:-1.0}
       BOT_BASE_URL: "${BOT_BASE_URL:-}"
       MINI_APP_URL: "${MINI_APP_URL:-}"
@@ -50,19 +49,23 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: poly_prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=10y'   # хранить данные 10 лет = практически бесконечно
+      - '--storage.tsdb.retention.size=20GB'  # но не больше 20 ГБ на диске
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - promdata:/prometheus
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
 
   grafana:
     image: grafana/grafana:latest
     container_name: poly_grafana
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:-changeme_grafana}"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
     volumes:
       - grafanadata:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro

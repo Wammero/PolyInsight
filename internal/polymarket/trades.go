@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"polymarket_go/internal/cache"
@@ -37,11 +38,15 @@ type WalletStats struct {
 }
 
 // GetTradeCount returns the number of trades ever made by the wallet.
-// Returns 999 on error (worker skips such wallets).
+// Returns 999 on any error (worker skips such wallets to avoid false positives).
 func GetTradeCount(ctx context.Context, client *http.Client, wallet string) int {
 	cacheKey := "trades:" + wallet
 	if val, ok := cache.GetString(ctx, cacheKey); ok {
-		count, _ := strconv.Atoi(val)
+		count, err := strconv.Atoi(val)
+		if err != nil {
+			// Corrupt cache entry — treat as API error, not as "zero trades".
+			return 999
+		}
 		return count
 	}
 
@@ -49,7 +54,6 @@ func GetTradeCount(ctx context.Context, client *http.Client, wallet string) int 
 	if err != nil || resp == nil {
 		return 999
 	}
-	// Always drain and close — prevents TCP connection leaks.
 	defer func() { io.Copy(io.Discard, resp.Body); resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
@@ -65,7 +69,7 @@ func GetTradeCount(ctx context.Context, client *http.Client, wallet string) int 
 }
 
 // GetWalletStats fetches enriched stats for display.
-// Cached 15 minutes per wallet. Never blocks the alert pipeline on API errors.
+// Cached 15 minutes per wallet. P&L and closed-positions are fetched in parallel.
 func GetWalletStats(ctx context.Context, client *http.Client, wallet string) *WalletStats {
 	cacheKey := "wstats:" + wallet
 	var cached WalletStats
@@ -76,74 +80,79 @@ func GetWalletStats(ctx context.Context, client *http.Client, wallet string) *Wa
 	stats := &WalletStats{WinRate: -1, TotalPnL: -999999}
 	stats.TotalTrades = GetTradeCount(ctx, client, wallet)
 
-	// All-time P&L from leaderboard endpoint.
-	if resp, err := client.Get(fmt.Sprintf(
-		"https://data-api.polymarket.com/v1/leaderboard?user=%s&timePeriod=ALL", wallet,
-	)); err == nil && resp != nil {
-		defer func() { io.Copy(io.Discard, resp.Body); resp.Body.Close() }()
-		if resp.StatusCode == 200 {
-			var rows []struct {
-				PnL float64 `json:"pnl"`
-			}
-			if json.NewDecoder(resp.Body).Decode(&rows) == nil && len(rows) > 0 {
-				stats.TotalPnL = rows[0].PnL
-			}
-		}
-	}
+	// Fetch P&L and closed positions in parallel to halve latency.
+	// Each goroutine writes to its own local variables — no shared-state data race.
+	var (
+		pnl          float64 = -999999
+		wins, losses int
+		winRate      float64 = -1
+	)
 
-	// Closed positions: win/loss by realized profit (matches what user sees on Polymarket).
-	// realizedPnl > 0 = win, realizedPnl <= 0 = loss.
-	if resp, err := client.Get(fmt.Sprintf(
-		"https://data-api.polymarket.com/closed-positions?user=%s&limit=500", wallet,
-	)); err == nil && resp != nil {
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Goroutine 1: all-time P&L from leaderboard endpoint.
+	go func() {
+		defer wg.Done()
+		resp, err := client.Get(fmt.Sprintf(
+			"https://data-api.polymarket.com/v1/leaderboard?user=%s&timePeriod=ALL", wallet,
+		))
+		if err != nil || resp == nil {
+			return
+		}
 		defer func() { io.Copy(io.Discard, resp.Body); resp.Body.Close() }()
-		if resp.StatusCode == 200 {
-			var closed []struct {
-				RealizedPnl float64 `json:"realizedPnl"`
+		if resp.StatusCode != 200 {
+			return
+		}
+		var rows []struct {
+			PnL float64 `json:"pnl"`
+		}
+		if json.NewDecoder(resp.Body).Decode(&rows) == nil && len(rows) > 0 {
+			pnl = rows[0].PnL
+		}
+	}()
+
+	// Goroutine 2: win/loss counts from closed positions.
+	// realizedPnl > 0 = win, realizedPnl <= 0 = loss.
+	go func() {
+		defer wg.Done()
+		resp, err := client.Get(fmt.Sprintf(
+			"https://data-api.polymarket.com/closed-positions?user=%s&limit=500", wallet,
+		))
+		if err != nil || resp == nil {
+			return
+		}
+		defer func() { io.Copy(io.Discard, resp.Body); resp.Body.Close() }()
+		if resp.StatusCode != 200 {
+			return
+		}
+		var closed []struct {
+			RealizedPnl float64 `json:"realizedPnl"`
+		}
+		if json.NewDecoder(resp.Body).Decode(&closed) == nil {
+			w, l := 0, 0
+			for _, pos := range closed {
+				if pos.RealizedPnl > 0 {
+					w++
+				} else {
+					l++
+				}
 			}
-			if json.NewDecoder(resp.Body).Decode(&closed) == nil {
-				wins, losses := 0, 0
-				for _, pos := range closed {
-					if pos.RealizedPnl > 0 {
-						wins++
-					} else {
-						losses++
-					}
-				}
-				stats.Wins = wins
-				stats.Losses = losses
-				if wins+losses > 0 {
-					stats.WinRate = float64(wins) / float64(wins+losses) * 100
-				}
+			wins, losses = w, l
+			if w+l > 0 {
+				winRate = float64(w) / float64(w+l) * 100
 			}
 		}
-	}
+	}()
+
+	wg.Wait()
+
+	// Merge goroutine results into stats (safe: both goroutines have finished).
+	stats.TotalPnL = pnl
+	stats.Wins = wins
+	stats.Losses = losses
+	stats.WinRate = winRate
 
 	cache.SetJSON(ctx, cacheKey, stats, 15*time.Minute)
 	return stats
-}
-
-// RecentTrades returns the N most recent tx hashes for a wallet (for favorites monitor).
-func RecentTrades(ctx context.Context, client *http.Client, wallet string, limit int) []string {
-	resp, err := client.Get(fmt.Sprintf(
-		"https://data-api.polymarket.com/activity?user=%s&limit=%d", wallet, limit,
-	))
-	if err != nil || resp == nil {
-		return nil
-	}
-	defer func() { io.Copy(io.Discard, resp.Body); resp.Body.Close() }()
-	if resp.StatusCode != 200 {
-		return nil
-	}
-
-	var rows []struct {
-		TransactionHash string `json:"transactionHash"`
-	}
-	json.NewDecoder(resp.Body).Decode(&rows)
-
-	hashes := make([]string, 0, len(rows))
-	for _, r := range rows {
-		hashes = append(hashes, r.TransactionHash)
-	}
-	return hashes
 }

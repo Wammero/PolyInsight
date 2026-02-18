@@ -20,7 +20,10 @@ import (
 	"polymarket_go/internal/tracker"
 )
 
-const bufferSize = 5000
+const (
+	bufferSize  = 5000
+	workerCount = 32
+)
 
 func main() {
 	cfg := config.Load()
@@ -39,17 +42,18 @@ func main() {
 
 	// Constant metrics set once at startup.
 	metrics.BufferCapacity.Set(bufferSize)
-	metrics.WorkerCount.Set(32)
+	metrics.WorkerCount.Set(workerCount)
 
 	// Mini App URL for settings keyboard Web App button.
 	botpkg.SetMiniAppURL(cfg.MiniAppURL)
 
 	// In-memory subscriber cache — eliminates DB query per whale event.
-	// ActiveUsers metric is updated inside StartSubCache on every refresh.
 	botpkg.StartSubCache()
 
+	// Periodic cleanup of session/pendingCats/settingsMsgs in-memory maps.
+	botpkg.StartSessionCleanup()
+
 	// Rate-limited Telegram send queue — 25 msg/sec, capacity 20 000.
-	// All outgoing alerts go through Enqueue(), never directly via b.SendMessage.
 	botpkg.StartSendQueue(tgBot)
 
 	// Telegram update handlers (commands + callback queries + Mini App data).
@@ -85,8 +89,8 @@ func main() {
 		}
 	}()
 
-	// Worker pool: 32 parallel trade processors.
-	for i := 1; i <= 32; i++ {
+	// Worker pool: workerCount parallel trade processors.
+	for i := 1; i <= workerCount; i++ {
 		go tracker.Worker(i, jobs, tgBot, cfg)
 	}
 
@@ -108,5 +112,7 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	<-sig
-	log.Println("Shutting down...")
+	log.Println("Shutting down — draining send queue (up to 30s)...")
+	botpkg.DrainAndClose()
+	log.Println("Done.")
 }

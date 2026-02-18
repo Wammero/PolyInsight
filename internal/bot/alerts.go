@@ -37,10 +37,11 @@ func SendAlert(
 	odds := 1.0 / p.Price
 	probability := p.Price * 100
 
-	// Short ID for click tracking (first 12 chars of tx hash).
-	shortID := p.TransactionHash
-	if len(shortID) > 12 {
-		shortID = shortID[:12]
+	// Short ID for click tracking: strip 0x prefix, take 20 hex chars (80-bit entropy).
+	// 20 chars vs original 12: collision probability drops from ~10^-14 to ~10^-24 per million txs.
+	shortID := strings.TrimPrefix(p.TransactionHash, "0x")
+	if len(shortID) > 20 {
+		shortID = shortID[:20]
 	}
 
 	marketURL := fmt.Sprintf("https://polymarket.com/market/%s?utm_source=whalebot&utm_medium=telegram&utm_campaign=alert&tid=%s",

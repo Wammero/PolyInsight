@@ -10,8 +10,15 @@ import (
 
 var RDB *redis.Client
 
+// Init connects to Redis. addr can be either "host:port" or a full URL
+// (e.g. "redis://:password@host:port/0") to support authenticated Redis.
 func Init(addr string) {
-	RDB = redis.NewClient(&redis.Options{Addr: addr})
+	opt, err := redis.ParseURL(addr)
+	if err != nil {
+		// Fallback: treat addr as bare host:port (no auth).
+		opt = &redis.Options{Addr: addr}
+	}
+	RDB = redis.NewClient(opt)
 }
 
 // GetJSON unmarshals a cached JSON value into dst. Returns false on miss or error.

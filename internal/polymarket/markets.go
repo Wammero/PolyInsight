@@ -35,32 +35,38 @@ func fetchMeta(ctx context.Context, slug string, client *http.Client) (*Category
 	// Step 1: resolve market ID.
 	resp, err := client.Get("https://gamma-api.polymarket.com/markets?slug=" + slug)
 	if err != nil || resp == nil || resp.StatusCode != 200 {
+		if resp != nil {
+			resp.Body.Close()
+		}
 		return nil, false
 	}
+	defer resp.Body.Close()
 	var markets []struct {
 		ID     string `json:"id"`
 		Active bool   `json:"active"`
 		Closed bool   `json:"closed"`
 	}
 	json.NewDecoder(resp.Body).Decode(&markets)
-	resp.Body.Close()
 
 	if len(markets) == 0 || !markets[0].Active || markets[0].Closed {
 		return nil, false
 	}
 
 	// Step 2: fetch tags.
-	resp, err = client.Get("https://gamma-api.polymarket.com/markets/" + markets[0].ID + "/tags")
-	if err != nil || resp == nil || resp.StatusCode != 200 {
+	resp2, err := client.Get("https://gamma-api.polymarket.com/markets/" + markets[0].ID + "/tags")
+	if err != nil || resp2 == nil || resp2.StatusCode != 200 {
+		if resp2 != nil {
+			resp2.Body.Close()
+		}
 		return nil, false
 	}
+	defer resp2.Body.Close()
 	var tags []struct {
 		ID    json.Number `json:"id"`
 		Slug  string      `json:"slug"`
 		Label string      `json:"label"`
 	}
-	json.NewDecoder(resp.Body).Decode(&tags)
-	resp.Body.Close()
+	json.NewDecoder(resp2.Body).Decode(&tags)
 
 	// Drop blacklisted markets.
 	for _, t := range tags {

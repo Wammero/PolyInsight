@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +20,9 @@ import (
 )
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
+
+// walletRe validates Ethereum-compatible addresses (0x + 40 hex chars).
+var walletRe = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
 
 // StartHandlers begins long-polling and routes all incoming updates.
 func StartHandlers(b *telego.Bot) {
@@ -46,6 +51,11 @@ func HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	// Prevent open redirect: only allow trusted Polymarket domain.
+	if !strings.HasPrefix(marketURL, "https://polymarket.com/") {
+		http.NotFound(w, r)
+		return
+	}
 	metrics.ClicksTotal.Inc()
 	http.Redirect(w, r, marketURL, http.StatusFound)
 }
@@ -64,7 +74,9 @@ func handleMessage(b *telego.Bot, msg *telego.Message) {
 
 	switch text {
 	case "/start":
-		db.Subscribe(ctx, chatID)
+		if err := db.Subscribe(ctx, chatID); err != nil {
+			log.Printf("subscribe chatID=%d: %v", chatID, err)
+		}
 		b.SendMessage(ctx, tu.Message(tu.ID(chatID),
 			"✅ <b>Подписка активна!</b>\n\n"+
 				"Бот будет присылать алерты о новых крупных игроках на Polymarket.\n\n"+
@@ -72,7 +84,9 @@ func handleMessage(b *telego.Bot, msg *telego.Message) {
 		).WithParseMode(telego.ModeHTML).WithReplyMarkup(MainMenuKeyboard()))
 
 	case "/stop", "🔕 Отписаться":
-		db.Unsubscribe(ctx, chatID)
+		if err := db.Unsubscribe(ctx, chatID); err != nil {
+			log.Printf("unsubscribe chatID=%d: %v", chatID, err)
+		}
 		b.SendMessage(ctx, tu.Message(tu.ID(chatID), "❌ Подписка отменена. Напишите /start чтобы снова подписаться."))
 
 	case "/settings", "⚙️ Настройки":
@@ -226,7 +240,12 @@ func handleSettingsInput(b *telego.Bot, ctx context.Context, chatID int64, state
 		return
 	}
 
-	db.UpsertSettings(ctx, s)
+	if err := db.UpsertSettings(ctx, s); err != nil {
+		log.Printf("handleSettingsInput: upsert chatID=%d: %v", chatID, err)
+		b.SendMessage(ctx, tu.Message(tu.ID(chatID), "❌ Ошибка сохранения настроек. Попробуйте позже.").
+			WithParseMode(telego.ModeHTML))
+		return
+	}
 	b.SendMessage(ctx, tu.Message(tu.ID(chatID),
 		"✅ <b>Настройки сохранены!</b>",
 	).WithParseMode(telego.ModeHTML).WithReplyMarkup(SettingsKeyboard(s)))
@@ -239,7 +258,15 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 	chatID := cb.From.ID
 	data := cb.Data
 
-	defer b.AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{CallbackQueryID: cb.ID})
+	// answered tracks whether AnswerCallbackQuery was already sent explicitly.
+	// The defer fires the bare acknowledgment only if no explicit answer was sent,
+	// preventing the double-answer bug on watch:add/del and category save.
+	answered := false
+	defer func() {
+		if !answered {
+			b.AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{CallbackQueryID: cb.ID})
+		}
+	}()
 
 	switch {
 	// ── Settings ────────────────────────────────────────────────────────
@@ -310,7 +337,7 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 
 	// ── Category toggles ─────────────────────────────────────────────────
 	case strings.HasPrefix(data, "cat:"):
-		handleCategoryCallback(b, ctx, chatID, cb, data)
+		handleCategoryCallback(b, ctx, chatID, cb, data, &answered)
 
 	// ── Click tracking ───────────────────────────────────────────────────
 	case strings.HasPrefix(data, "click:"):
@@ -337,6 +364,7 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 	// ── Watchlist ────────────────────────────────────────────────────────
 	case strings.HasPrefix(data, "watch:add:"):
 		wallet := strings.TrimPrefix(data, "watch:add:")
+		answered = true
 		err := db.AddWatch(ctx, chatID, wallet, "")
 		if err == db.ErrWatchlistFull {
 			b.AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
@@ -361,7 +389,10 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 
 	case strings.HasPrefix(data, "watch:del:"):
 		wallet := strings.TrimPrefix(data, "watch:del:")
-		db.RemoveWatch(ctx, chatID, wallet)
+		answered = true
+		if err := db.RemoveWatch(ctx, chatID, wallet); err != nil {
+			log.Printf("watch:del chatID=%d wallet=%s: %v", chatID, wallet, err)
+		}
 		b.AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: cb.ID,
 			Text:            "👁 Вы перестали следить за этим кошельком",
@@ -393,7 +424,8 @@ func extractShortID(msg *telego.Message) string {
 }
 
 // handleCategoryCallback manages category toggle state in-memory (no DB until Save).
-func handleCategoryCallback(b *telego.Bot, ctx context.Context, chatID int64, cb *telego.CallbackQuery, data string) {
+// answered is set to true if this function already called AnswerCallbackQuery.
+func handleCategoryCallback(b *telego.Bot, ctx context.Context, chatID int64, cb *telego.CallbackQuery, data string, answered *bool) {
 	key := strings.TrimPrefix(data, "cat:")
 
 	cats, ok := getPendingCats(chatID)
@@ -421,7 +453,14 @@ func handleCategoryCallback(b *telego.Bot, ctx context.Context, chatID int64, cb
 			s = &db.UserSettings{ChatID: chatID, MinAmount: 1000, MaxTrades: 5, MinOdds: 1.15}
 		}
 		s.Categories = cats
-		db.UpsertSettings(ctx, s)
+		*answered = true
+		if err := db.UpsertSettings(ctx, s); err != nil {
+			log.Printf("handleCategoryCallback save chatID=%d: %v", chatID, err)
+			b.AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
+				CallbackQueryID: cb.ID, Text: "❌ Ошибка сохранения. Попробуйте позже.", ShowAlert: true,
+			})
+			return
+		}
 		clearPendingCats(chatID)
 		b.AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: cb.ID, Text: "💾 Категории сохранены!", ShowAlert: true,
@@ -545,7 +584,9 @@ func handleWebAppData(b *telego.Bot, msg *telego.Message) {
 			return
 		}
 		for _, wallet := range body.Wallets {
-			db.RemoveWatch(ctx, chatID, wallet)
+			if err := db.RemoveWatch(ctx, chatID, wallet); err != nil {
+				log.Printf("delete_watches chatID=%d wallet=%s: %v", chatID, wallet, err)
+			}
 		}
 		b.SendMessage(ctx, tu.Message(tu.ID(chatID),
 			fmt.Sprintf("👁 Перестали следить за %d кошельками", len(body.Wallets))).
@@ -555,8 +596,8 @@ func handleWebAppData(b *telego.Bot, msg *telego.Message) {
 		var body struct {
 			Wallet string `json:"wallet"`
 		}
-		if err := json.Unmarshal([]byte(data), &body); err != nil || len(body.Wallet) < 10 {
-			b.SendMessage(ctx, tu.Message(tu.ID(chatID), "❌ Неверный адрес кошелька").
+		if err := json.Unmarshal([]byte(data), &body); err != nil || !walletRe.MatchString(body.Wallet) {
+			b.SendMessage(ctx, tu.Message(tu.ID(chatID), "❌ Неверный адрес кошелька (ожидается 0x...)").
 				WithReplyMarkup(MainMenuKeyboard()))
 			return
 		}

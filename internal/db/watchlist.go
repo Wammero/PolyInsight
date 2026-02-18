@@ -7,7 +7,7 @@ import (
 
 const MaxWatchlistSize = 10
 
-// ErrWatchlistFull is returned when a user tries to add a 6th wallet to follow.
+// ErrWatchlistFull is returned when a user tries to add a wallet beyond the 10-wallet limit.
 var ErrWatchlistFull = errors.New("watchlist is full (max 10)")
 
 // Watchlist holds a single watchlist entry.
@@ -18,20 +18,36 @@ type Watchlist struct {
 	Label  string
 }
 
+// AddWatch adds wallet to the user's watchlist atomically.
+// The COUNT check and INSERT happen in a single statement — eliminates TOCTOU race.
 func AddWatch(ctx context.Context, chatID int64, wallet, label string) error {
-	var count int
-	if err := DB.QueryRowContext(ctx,
-		"SELECT COUNT(*) FROM watchlist WHERE chat_id=$1", chatID).Scan(&count); err != nil {
+	res, err := DB.ExecContext(ctx, `
+		INSERT INTO watchlist (chat_id, wallet, label)
+		SELECT $1, $2, $3
+		WHERE (SELECT COUNT(*) FROM watchlist WHERE chat_id = $1) < $4
+		ON CONFLICT (chat_id, wallet) DO NOTHING`,
+		chatID, wallet, label, MaxWatchlistSize)
+	if err != nil {
 		return err
 	}
-	if count >= MaxWatchlistSize {
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		// 0 rows affected: either limit reached or duplicate wallet. Determine which.
+		var exists int
+		if err := DB.QueryRowContext(ctx,
+			"SELECT COUNT(*) FROM watchlist WHERE chat_id=$1 AND wallet=$2",
+			chatID, wallet).Scan(&exists); err != nil {
+			return err
+		}
+		if exists > 0 {
+			return nil // already watching — idempotent, OK
+		}
 		return ErrWatchlistFull
 	}
-	_, err := DB.ExecContext(ctx,
-		`INSERT INTO watchlist (chat_id, wallet, label) VALUES ($1, $2, $3)
-		 ON CONFLICT (chat_id, wallet) DO NOTHING`,
-		chatID, wallet, label)
-	return err
+	return nil
 }
 
 func RemoveWatch(ctx context.Context, chatID int64, wallet string) error {
