@@ -72,6 +72,14 @@ Polymarket WebSocket
 
 ---
 
+## Monitoring Dashboard
+
+Real-time Prometheus + Grafana dashboard — WebSocket throughput, pipeline filtering, alert delivery latency, active users, and system metrics (CPU, RAM, network):
+
+![Grafana Dashboard](assets/grafana-dashboard.png)
+
+---
+
 ## Tech Stack
 
 | Component | Technology |
