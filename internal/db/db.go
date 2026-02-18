@@ -63,6 +63,8 @@ func migrate() {
 			clicks     INT DEFAULT 0,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Add tx_hash column if it doesn't exist (safe to run on existing DBs).
+		`ALTER TABLE alert_clicks ADD COLUMN IF NOT EXISTS tx_hash TEXT DEFAULT ''`,
 		`CREATE TABLE IF NOT EXISTS watchlist (
 			id         SERIAL PRIMARY KEY,
 			chat_id    BIGINT NOT NULL REFERENCES users(chat_id) ON DELETE CASCADE,

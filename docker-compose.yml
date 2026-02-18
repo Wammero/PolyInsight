@@ -32,6 +32,7 @@ services:
     build: .
     container_name: polymarket_prometheus_bot
     restart: always
+    stop_grace_period: 40s
     depends_on:
       db:
         condition: service_healthy
@@ -45,6 +46,8 @@ services:
       MIN_ODDS: ${MIN_ODDS:-1.0}
       BOT_BASE_URL: "${BOT_BASE_URL:-}"
       MINI_APP_URL: "${MINI_APP_URL:-}"
+    ports:
+      - "0.0.0.0:2112:2112"
 
   prometheus:
     image: prom/prometheus:latest

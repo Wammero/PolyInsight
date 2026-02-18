@@ -49,10 +49,10 @@ var (
 		Help: "Алертов «ваш кит совершил сделку»",
 	})
 
-	ClicksTotal = promauto.NewCounter(prometheus.CounterOpts{
+	ClicksTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "bot_link_clicks_total",
 		Help: "Кликов по трекинговым ссылкам",
-	})
+	}, []string{"type"})
 
 	// ── Filtering ──────────────────────────────────────────────────────────
 	FilteredVolume = promauto.NewCounter(prometheus.CounterOpts{

@@ -48,12 +48,31 @@ func SendAlert(
 		p.Slug, p.TransactionHash)
 
 	// Register alert for click tracking (first occurrence wins due to ON CONFLICT DO NOTHING).
-	db.RegisterAlert(ctx, shortID, p.ProxyWallet, p.Slug, marketURL, 0)
+	db.RegisterAlert(ctx, shortID, p.ProxyWallet, p.Slug, marketURL, p.TransactionHash, 0)
 
-	// Build tracking URL: use redirect server if baseURL is set, else direct.
-	trackURL := marketURL
+	// Build tracked URLs.
+	// Priority: redirect server (self-hosted, full Prometheus metrics) >
+	//           is.gd (free external, stats on is.gd website) >
+	//           direct links (no tracking).
+	rawProfileURL := "https://polymarket.com/profile/" + p.ProxyWallet
+	rawDebankURL := "https://debank.com/profile/" + p.ProxyWallet
+	rawPgsanURL := "https://polygonscan.com/tx/" + p.TransactionHash
+
+	var trackURL, profileURL, debankURL, pgsanURL string
 	if baseURL != "" {
+		// Self-hosted redirect server: all metrics go to Prometheus/Grafana.
 		trackURL = fmt.Sprintf("%s/r/%s", baseURL, shortID)
+		profileURL = fmt.Sprintf("%s/r/%s/profile", baseURL, shortID)
+		debankURL = fmt.Sprintf("%s/r/%s/debank", baseURL, shortID)
+		pgsanURL = fmt.Sprintf("%s/r/%s/pgsan", baseURL, shortID)
+	} else {
+		// No redirect server: use direct links.
+		// is.gd is NOT used here — even with caching, HTTP calls block workers
+		// and cause buffer overflow under load.
+		trackURL = marketURL
+		profileURL = rawProfileURL
+		debankURL = rawDebankURL
+		pgsanURL = rawPgsanURL
 	}
 
 	name := p.Pseudonym
@@ -87,9 +106,9 @@ func SendAlert(
 			"🎯 <b>Рынок:</b> %s\n"+
 			"📌 <b>Ставка на:</b> %s\n\n"+
 			"🔗 <b>Ссылки:</b>\n"+
-			"• <a href='https://polymarket.com/profile/%s'>Профиль Polymarket</a>\n"+
-			"• <a href='https://debank.com/profile/%s'>Портфель DeBank</a>\n"+
-			"• <a href='https://polygonscan.com/tx/%s'>PolygonScan</a>",
+			"• <a href='%s'>Профиль Polymarket</a>\n"+
+			"• <a href='%s'>Портфель DeBank</a>\n"+
+			"• <a href='%s'>PolygonScan</a>",
 		meta.Emoji, strings.ToUpper(meta.Label),
 		volume, odds, probability,
 		trades,
@@ -97,7 +116,7 @@ func SendAlert(
 		playerBlock,
 		p.Title,
 		strings.ToUpper(p.Outcome),
-		p.ProxyWallet, p.ProxyWallet, p.TransactionHash,
+		profileURL, debankURL, pgsanURL,
 	)
 
 	// Build a lookup set of follower chatIDs to avoid extra DB calls per subscriber.

@@ -46,9 +46,6 @@ func AlertKeyboard(wallet, shortID string, isWatch bool) *telego.InlineKeyboardM
 			tu.InlineKeyboardButton("📊 Статистика кита").WithCallbackData("stats:"+wallet),
 			tu.InlineKeyboardButton(watchLabel).WithCallbackData(watchCallback),
 		),
-		tu.InlineKeyboardRow(
-			tu.InlineKeyboardButton("🔗 Перейти к сделке").WithCallbackData("click:"+shortID),
-		),
 	)
 }
 

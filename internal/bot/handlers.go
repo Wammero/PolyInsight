@@ -39,25 +39,62 @@ func StartHandlers(b *telego.Bot) {
 	}
 }
 
-// HandleRedirect is an HTTP handler for tracked redirect links (/r/{shortID}).
+// HandleRedirect is an HTTP handler for tracked redirect links.
+// Supports /r/{shortID} (market) and /r/{shortID}/{type} (profile, debank, pgsan).
 func HandleRedirect(w http.ResponseWriter, r *http.Request) {
-	shortID := strings.TrimPrefix(r.URL.Path, "/r/")
+	path := strings.TrimPrefix(r.URL.Path, "/r/")
+	parts := strings.SplitN(path, "/", 2)
+	shortID := parts[0]
+	linkType := "market"
+	if len(parts) == 2 && parts[1] != "" {
+		linkType = parts[1]
+	}
 	if shortID == "" {
 		http.NotFound(w, r)
 		return
 	}
-	marketURL, err := db.IncrementClick(context.Background(), shortID)
-	if err != nil || marketURL == "" {
-		http.NotFound(w, r)
-		return
+
+	ctx := context.Background()
+	var targetURL string
+
+	switch linkType {
+	case "profile":
+		wallet, _, err := db.GetAlertLinks(ctx, shortID)
+		if err != nil || wallet == "" {
+			http.NotFound(w, r)
+			return
+		}
+		targetURL = "https://polymarket.com/profile/" + wallet
+	case "debank":
+		wallet, _, err := db.GetAlertLinks(ctx, shortID)
+		if err != nil || wallet == "" {
+			http.NotFound(w, r)
+			return
+		}
+		targetURL = "https://debank.com/profile/" + wallet
+	case "pgsan":
+		_, txHash, err := db.GetAlertLinks(ctx, shortID)
+		if err != nil || txHash == "" {
+			http.NotFound(w, r)
+			return
+		}
+		targetURL = "https://polygonscan.com/tx/" + txHash
+	default:
+		marketURL, err := db.IncrementClick(ctx, shortID)
+		if err != nil || marketURL == "" {
+			http.NotFound(w, r)
+			return
+		}
+		// Prevent open redirect: only allow trusted Polymarket domain.
+		if !strings.HasPrefix(marketURL, "https://polymarket.com/") {
+			http.NotFound(w, r)
+			return
+		}
+		targetURL = marketURL
 	}
-	// Prevent open redirect: only allow trusted Polymarket domain.
-	if !strings.HasPrefix(marketURL, "https://polymarket.com/") {
-		http.NotFound(w, r)
-		return
-	}
-	metrics.ClicksTotal.Inc()
-	http.Redirect(w, r, marketURL, http.StatusFound)
+
+	metrics.ClicksTotal.WithLabelValues(linkType).Inc()
+	http.Redirect(w, r, targetURL, http.StatusFound)
 }
 
 // ─── Message handler ───────────────────────────────────────────────────────
@@ -347,11 +384,12 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 			b.SendMessage(ctx, tu.Message(tu.ID(chatID), "❌ Ссылка не найдена."))
 			return
 		}
-		metrics.ClicksTotal.Inc()
+		metrics.ClicksTotal.WithLabelValues("market").Inc()
 		b.SendMessage(ctx, tu.Message(tu.ID(chatID),
 			fmt.Sprintf("🔗 <a href='%s'>Открыть сделку на Polymarket ↗</a>", marketURL),
 		).WithParseMode(telego.ModeHTML).
 			WithLinkPreviewOptions(&telego.LinkPreviewOptions{IsDisabled: true}))
+
 
 	// ── Wallet stats ─────────────────────────────────────────────────────
 	case strings.HasPrefix(data, "stats:"):

@@ -29,7 +29,7 @@
     {
       "id": 1,
       "type": "row",
-      "title": "\ud83c\udf0a WebSocket",
+      "title": "🌊 WebSocket",
       "gridPos": {
         "x": 0,
         "y": 0,
@@ -40,7 +40,7 @@
     },
     {
       "id": 2,
-      "title": "WS \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0439/\u0441\u0435\u043a",
+      "title": "WS сообщений/сек",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -67,17 +67,17 @@
       "targets": [
         {
           "expr": "rate(bot_ws_messages_total[1m])",
-          "legendFormat": "\u041f\u043e\u043b\u0443\u0447\u0435\u043d\u043e"
+          "legendFormat": "Получено"
         },
         {
           "expr": "rate(bot_ws_dropped_total[1m])",
-          "legendFormat": "\u0421\u0431\u0440\u043e\u0448\u0435\u043d\u043e (\u0431\u0443\u0444\u0435\u0440 \u043f\u043e\u043b\u043e\u043d)"
+          "legendFormat": "Сброшено (буфер полон)"
         }
       ]
     },
     {
       "id": 3,
-      "title": "\u0411\u0443\u0444\u0435\u0440 \u0437\u0430\u0434\u0430\u0447",
+      "title": "Буфер задач",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -110,17 +110,17 @@
       "targets": [
         {
           "expr": "bot_worker_buffer_messages",
-          "legendFormat": "\u0417\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e"
+          "legendFormat": "Заполнено"
         },
         {
           "expr": "bot_worker_buffer_capacity",
-          "legendFormat": "\u0401\u043c\u043a\u043e\u0441\u0442\u044c (5000)"
+          "legendFormat": "Ёмкость (5000)"
         }
       ]
     },
     {
       "id": 7,
-      "title": "\u0412\u043e\u0440\u043a\u0435\u0440\u043e\u0432 \u0430\u043a\u0442\u0438\u0432\u043d\u043e",
+      "title": "Воркеров активно",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -144,13 +144,13 @@
       "targets": [
         {
           "expr": "bot_worker_count",
-          "legendFormat": "\u0412\u043e\u0440\u043a\u0435\u0440\u043e\u0432"
+          "legendFormat": "Воркеров"
         }
       ]
     },
     {
       "id": 4,
-      "title": "\u0417\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u0431\u0443\u0444\u0435\u0440\u0430 %",
+      "title": "Заполнение буфера %",
       "type": "gauge",
       "datasource": {
         "type": "prometheus",
@@ -193,13 +193,13 @@
       "targets": [
         {
           "expr": "bot_worker_buffer_messages / bot_worker_buffer_capacity * 100",
-          "legendFormat": "\u0411\u0443\u0444\u0435\u0440 %"
+          "legendFormat": "Буфер %"
         }
       ]
     },
     {
       "id": 5,
-      "title": "WS \u043f\u0435\u0440\u0435\u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f",
+      "title": "WS переподключения",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -236,13 +236,13 @@
       "targets": [
         {
           "expr": "bot_ws_reconnects_total",
-          "legendFormat": "\u041f\u0435\u0440\u0435\u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0439"
+          "legendFormat": "Переподключений"
         }
       ]
     },
     {
       "id": 6,
-      "title": "\u0421\u0431\u0440\u043e\u0448\u0435\u043d\u043e \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0439",
+      "title": "Сброшено сообщений",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -279,14 +279,14 @@
       "targets": [
         {
           "expr": "bot_ws_dropped_total",
-          "legendFormat": "\u0421\u0431\u0440\u043e\u0448\u0435\u043d\u043e"
+          "legendFormat": "Сброшено"
         }
       ]
     },
     {
       "id": 10,
       "type": "row",
-      "title": "\ud83e\udd16 Pipeline",
+      "title": "🤖 Pipeline",
       "gridPos": {
         "x": 0,
         "y": 9,
@@ -297,7 +297,7 @@
     },
     {
       "id": 8,
-      "title": "\u041e\u0447\u0435\u0440\u0435\u0434\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0438 TG",
+      "title": "Очередь отправки TG",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -342,17 +342,17 @@
       "targets": [
         {
           "expr": "bot_send_queue_size",
-          "legendFormat": "\u0412 \u043e\u0447\u0435\u0440\u0435\u0434\u0438"
+          "legendFormat": "В очереди"
         },
         {
           "expr": "rate(bot_send_queue_dropped_total[1m])",
-          "legendFormat": "\u0421\u0431\u0440\u043e\u0448\u0435\u043d\u043e/\u0441"
+          "legendFormat": "Сброшено/с"
         }
       ]
     },
     {
       "id": 11,
-      "title": "\u0421\u043e\u0431\u044b\u0442\u0438\u044f \u043a\u0438\u0442\u0430 / \u0430\u043b\u0435\u0440\u0442\u043e\u0432 \u0432 \u0441\u0435\u043a",
+      "title": "События кита / алертов в сек",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -379,21 +379,21 @@
       "targets": [
         {
           "expr": "rate(bot_whale_events_total[1m])",
-          "legendFormat": "\ud83d\udc0b \u041a\u0438\u0442\u044b (>\u043f\u043e\u0440\u043e\u0433\u0430)"
+          "legendFormat": "🐋 Киты (>порога)"
         },
         {
           "expr": "rate(bot_perfect_alerts_total[1m])",
-          "legendFormat": "\ud83d\udce3 \u0410\u043b\u0435\u0440\u0442\u044b TG"
+          "legendFormat": "📣 Алерты TG"
         },
         {
           "expr": "rate(bot_follow_alerts_total[1m])",
-          "legendFormat": "\ud83d\udc41 \u0421\u043b\u0435\u0436\u043a\u0430-\u0430\u043b\u0435\u0440\u0442\u044b"
+          "legendFormat": "👁 Слежка-алерты"
         }
       ]
     },
     {
       "id": 12,
-      "title": "\u0412\u0440\u0435\u043c\u044f \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0438 \u0441\u0434\u0435\u043b\u043a\u0438",
+      "title": "Время обработки сделки",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -432,18 +432,18 @@
         },
         {
           "expr": "bot_event_processed_lag_seconds{quantile=\"0.5\"}",
-          "legendFormat": "Lag p50 (WS\u2192TG)"
+          "legendFormat": "Lag p50 (WS→TG)"
         },
         {
           "expr": "bot_event_processed_lag_seconds{quantile=\"0.9\"}",
-          "legendFormat": "Lag p90 (WS\u2192TG)"
+          "legendFormat": "Lag p90 (WS→TG)"
         }
       ]
     },
     {
       "id": 20,
       "type": "row",
-      "title": "\ud83d\udeab \u0424\u0438\u043b\u044c\u0442\u0440\u0430\u0446\u0438\u044f",
+      "title": "🚫 Фильтрация",
       "gridPos": {
         "x": 0,
         "y": 18,
@@ -454,7 +454,7 @@
     },
     {
       "id": 21,
-      "title": "\u0412\u043e\u0440\u043e\u043d\u043a\u0430 \u0444\u0438\u043b\u044c\u0442\u0440\u0430\u0446\u0438\u0438 (\u0441\u043e\u0431\u044b\u0442\u0438\u0439/\u0441\u0435\u043a)",
+      "title": "Воронка фильтрации (событий/сек)",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -481,37 +481,37 @@
       "targets": [
         {
           "expr": "rate(bot_ws_messages_total[1m])",
-          "legendFormat": "\ud83d\udce5 \u0418\u0437 WS"
+          "legendFormat": "📥 Из WS"
         },
         {
           "expr": "rate(bot_whale_events_total[1m])",
-          "legendFormat": "\ud83d\udc0b >\u043f\u043e\u0440\u043e\u0433\u0430 \u043e\u0431\u044a\u0451\u043c\u0430"
+          "legendFormat": "🐋 >порога объёма"
         },
         {
           "expr": "rate(bot_trades_filtered_volume_total[1m])",
-          "legendFormat": "\u274c \u041e\u0431\u044a\u0451\u043c \u043c\u0430\u043b"
+          "legendFormat": "❌ Объём мал"
         },
         {
           "expr": "rate(bot_trades_filtered_banword_total[1m])",
-          "legendFormat": "\u274c \u0421\u0442\u043e\u043f-\u0441\u043b\u043e\u0432\u043e"
+          "legendFormat": "❌ Стоп-слово"
         },
         {
           "expr": "rate(bot_trades_filtered_no_meta_total[1m])",
-          "legendFormat": "\u274c \u041d\u0435\u0442 \u043c\u0435\u0442\u0430\u0434\u0430\u0442\u044b"
+          "legendFormat": "❌ Нет метадаты"
         },
         {
           "expr": "rate(bot_trades_filtered_api_error_total[1m])",
-          "legendFormat": "\u274c API \u043e\u0448\u0438\u0431\u043a\u0430"
+          "legendFormat": "❌ API ошибка"
         },
         {
           "expr": "rate(bot_perfect_alerts_total[1m])",
-          "legendFormat": "\u2705 \u0410\u043b\u0435\u0440\u0442\u043e\u0432 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e"
+          "legendFormat": "✅ Алертов отправлено"
         }
       ]
     },
     {
       "id": 22,
-      "title": "\u041e\u0442\u0444\u0438\u043b\u044c\u0442\u0440\u043e\u0432\u0430\u043d\u043e \u0437\u0430 \u0432\u0441\u0451 \u0432\u0440\u0435\u043c\u044f",
+      "title": "Отфильтровано за всё время",
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
@@ -548,26 +548,26 @@
       "targets": [
         {
           "expr": "bot_trades_filtered_volume_total",
-          "legendFormat": "\u041e\u0431\u044a\u0451\u043c \u043c\u0430\u043b"
+          "legendFormat": "Объём мал"
         },
         {
           "expr": "bot_trades_filtered_banword_total",
-          "legendFormat": "\u0421\u0442\u043e\u043f-\u0441\u043b\u043e\u0432\u043e"
+          "legendFormat": "Стоп-слово"
         },
         {
           "expr": "bot_trades_filtered_no_meta_total",
-          "legendFormat": "\u041d\u0435\u0442 \u043c\u0435\u0442\u0430\u0434\u0430\u0442\u044b"
+          "legendFormat": "Нет метадаты"
         },
         {
           "expr": "bot_trades_filtered_api_error_total",
-          "legendFormat": "API \u043e\u0448\u0438\u0431\u043a\u0430"
+          "legendFormat": "API ошибка"
         }
       ]
     },
     {
       "id": 30,
       "type": "row",
-      "title": "\ud83d\udc65 \u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438",
+      "title": "👥 Пользователи",
       "gridPos": {
         "x": 0,
         "y": 27,
@@ -578,7 +578,7 @@
     },
     {
       "id": 31,
-      "title": "\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439",
+      "title": "Активных пользователей",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -602,13 +602,13 @@
       "targets": [
         {
           "expr": "bot_active_users",
-          "legendFormat": "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439"
+          "legendFormat": "Пользователей"
         }
       ]
     },
     {
       "id": 32,
-      "title": "\u0421\u043b\u0435\u0436\u0435\u043a (watchlist)",
+      "title": "Слежек (watchlist)",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -632,13 +632,13 @@
       "targets": [
         {
           "expr": "bot_watchlist_entries",
-          "legendFormat": "\u0421\u043b\u0435\u0436\u0435\u043a"
+          "legendFormat": "Слежек"
         }
       ]
     },
     {
       "id": 33,
-      "title": "\u041a\u043b\u0438\u043a\u043e\u0432 \u043f\u043e \u0441\u0441\u044b\u043b\u043a\u0430\u043c",
+      "title": "Кликов по ссылкам",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -662,13 +662,13 @@
       "targets": [
         {
           "expr": "bot_link_clicks_total",
-          "legendFormat": "\u041a\u043b\u0438\u043a\u0438"
+          "legendFormat": "Клики"
         }
       ]
     },
     {
       "id": 34,
-      "title": "\u0412\u0441\u0435\u0433\u043e \u0430\u043b\u0435\u0440\u0442\u043e\u0432",
+      "title": "Всего алертов",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -692,14 +692,14 @@
       "targets": [
         {
           "expr": "bot_perfect_alerts_total",
-          "legendFormat": "\u0410\u043b\u0435\u0440\u0442\u043e\u0432"
+          "legendFormat": "Алертов"
         }
       ]
     },
     {
       "id": 40,
       "type": "row",
-      "title": "\ud83d\udcbb \u0421\u0438\u0441\u0442\u0435\u043c\u0430 (Node Exporter)",
+      "title": "💻 Система (Node Exporter)",
       "gridPos": {
         "x": 0,
         "y": 33,
@@ -756,13 +756,13 @@
       "targets": [
         {
           "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
-          "legendFormat": "CPU \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u0435"
+          "legendFormat": "CPU использование"
         }
       ]
     },
     {
       "id": 42,
-      "title": "\u041f\u0430\u043c\u044f\u0442\u044c %",
+      "title": "Память %",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -791,13 +791,13 @@
       "targets": [
         {
           "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
-          "legendFormat": "RAM \u0437\u0430\u043d\u044f\u0442\u043e"
+          "legendFormat": "RAM занято"
         }
       ]
     },
     {
       "id": 43,
-      "title": "\u0414\u0438\u0441\u043a %",
+      "title": "Диск %",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -843,13 +843,13 @@
       "targets": [
         {
           "expr": "(1 - node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"}) * 100",
-          "legendFormat": "\u0414\u0438\u0441\u043a \u0437\u0430\u043d\u044f\u0442\u043e"
+          "legendFormat": "Диск занято"
         }
       ]
     },
     {
       "id": 44,
-      "title": "\u0421\u0435\u0442\u044c (\u0431\u0430\u0439\u0442/\u0441\u0435\u043a)",
+      "title": "Сеть (байт/сек)",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -876,11 +876,11 @@
       "targets": [
         {
           "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[1m])",
-          "legendFormat": "\u2193 \u0412\u0445\u043e\u0434\u044f\u0449\u0438\u0439 {{device}}"
+          "legendFormat": "↓ Входящий {{device}}"
         },
         {
           "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[1m])",
-          "legendFormat": "\u2191 \u0418\u0441\u0445\u043e\u0434\u044f\u0449\u0438\u0439 {{device}}"
+          "legendFormat": "↑ Исходящий {{device}}"
         }
       ]
     },
@@ -926,7 +926,7 @@
     },
     {
       "id": 51,
-      "title": "\u041f\u0430\u043c\u044f\u0442\u044c (\u0431\u0430\u0439\u0442\u044b)",
+      "title": "Память (байты)",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -953,15 +953,15 @@
       "targets": [
         {
           "expr": "node_memory_MemTotal_bytes",
-          "legendFormat": "\u0412\u0441\u0435\u0433\u043e"
+          "legendFormat": "Всего"
         },
         {
           "expr": "node_memory_MemAvailable_bytes",
-          "legendFormat": "\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e"
+          "legendFormat": "Доступно"
         },
         {
           "expr": "node_memory_MemFree_bytes",
-          "legendFormat": "\u0421\u0432\u043e\u0431\u043e\u0434\u043d\u043e"
+          "legendFormat": "Свободно"
         }
       ]
     },
@@ -992,6 +992,412 @@
         {
           "expr": "time() - node_boot_time_seconds",
           "legendFormat": "Uptime"
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "type": "row",
+      "title": "🔗 Клики по ссылкам",
+      "gridPos": {
+        "x": 0,
+        "y": 50,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false
+    },
+    {
+      "id": 61,
+      "title": "Всего кликов",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 4,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(bot_link_clicks_total)",
+          "legendFormat": "Всего",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "title": "Перейти к сделке",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 51,
+        "w": 5,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(bot_link_clicks_total{type=\"market\"})",
+          "legendFormat": "Market",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "title": "Профиль Polymarket",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 9,
+        "y": 51,
+        "w": 5,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(bot_link_clicks_total{type=\"profile\"})",
+          "legendFormat": "Profile",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "title": "DeBank",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 51,
+        "w": 5,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(bot_link_clicks_total{type=\"debank\"})",
+          "legendFormat": "DeBank",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "title": "PolygonScan",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 19,
+        "y": 51,
+        "w": 5,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ]
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(bot_link_clicks_total{type=\"polygonscan\"})",
+          "legendFormat": "PolygonScan",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "title": "Клики по ссылкам по типу (в сек)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 24,
+        "h": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Сделка"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Профиль"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "DeBank"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PolygonScan"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "rate(bot_link_clicks_total{type=\"market\"}[5m])",
+          "legendFormat": "Сделка",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
+        },
+        {
+          "expr": "rate(bot_link_clicks_total{type=\"profile\"}[5m])",
+          "legendFormat": "Профиль",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
+        },
+        {
+          "expr": "rate(bot_link_clicks_total{type=\"debank\"}[5m])",
+          "legendFormat": "DeBank",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
+        },
+        {
+          "expr": "rate(bot_link_clicks_total{type=\"polygonscan\"}[5m])",
+          "legendFormat": "PolygonScan",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
         }
       ]
     }
