@@ -74,6 +74,14 @@ Polymarket WebSocket
 
 ## Telegram Bot Interface
 
+### Bot profile and description screen
+
+The bot profile and the description screen shown when a user opens the chat for the first time:
+
+![Bot Menu](assets/telegram_bot_menu.png)
+
+![Bot Description](assets/telegram_description.png)
+
 ### Alert message with inline buttons
 
 Every whale alert includes wallet context (P&L, win rate, trade count), market info, odds, and one-click buttons to view stats, follow the wallet, or jump to the trade on Polymarket:
