@@ -185,4 +185,4 @@ The grant would be used to:
 
 - **Telegram Mini App (settings UI):** https://wammero.github.io/poly_site/
 - **Source code:** https://github.com/Wammero/PolyInsight
-- **Telegram bot:** @PolySecretbot
+- **Telegram bot:** https://t.me/PolySecretbot
