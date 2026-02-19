@@ -19,7 +19,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -e
-            cd /home/${{ secrets.SSH_USER }}/PolyInsight
+            cd ~/PolyInsight
             git pull origin main
             docker compose up --build -d
             echo "✅ Deploy complete!"
