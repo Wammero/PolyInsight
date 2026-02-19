@@ -1288,7 +1288,7 @@
     },
     {
       "id": 66,
-      "title": "Клики по ссылкам по типу (в сек)",
+      "title": "Клики по ссылкам по типу",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -1311,7 +1311,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
+          "unit": "short",
           "custom": {
             "lineWidth": 2,
             "fillOpacity": 10
@@ -1382,7 +1382,7 @@
       },
       "targets": [
         {
-          "expr": "rate(bot_link_clicks_total{type=\"market\"}[$__rate_interval])",
+          "expr": "increase(bot_link_clicks_total{type=\"market\"}[$__interval]) > 0",
           "legendFormat": "Сделка",
           "datasource": {
             "type": "prometheus",
@@ -1390,7 +1390,7 @@
           }
         },
         {
-          "expr": "rate(bot_link_clicks_total{type=\"profile\"}[$__rate_interval])",
+          "expr": "increase(bot_link_clicks_total{type=\"profile\"}[$__interval]) > 0",
           "legendFormat": "Профиль",
           "datasource": {
             "type": "prometheus",
@@ -1398,7 +1398,7 @@
           }
         },
         {
-          "expr": "rate(bot_link_clicks_total{type=\"debank\"}[$__rate_interval])",
+          "expr": "increase(bot_link_clicks_total{type=\"debank\"}[$__interval]) > 0",
           "legendFormat": "DeBank",
           "datasource": {
             "type": "prometheus",
@@ -1406,7 +1406,7 @@
           }
         },
         {
-          "expr": "rate(bot_link_clicks_total{type=\"pgsan\"}[$__rate_interval])",
+          "expr": "increase(bot_link_clicks_total{type=\"pgsan\"}[$__interval]) > 0",
           "legendFormat": "PolygonScan",
           "datasource": {
             "type": "prometheus",

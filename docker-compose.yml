@@ -69,6 +69,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:-changeme_grafana}"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
+      POSTGRES_USER: "${POSTGRES_USER:-whale_user}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-changeme_postgres}"
     volumes:
       - grafanadata:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro

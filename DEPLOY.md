@@ -90,7 +90,7 @@ docker compose up --build -d
 
 ```bash
 # Войди в контейнер PostgreSQL
-docker compose exec postgres psql -U whale_user -d polymarket
+docker compose exec db psql -U whale_user -d whale_tracker
 
 # Нормализуй адреса к lowercase
 UPDATE watchlist SET wallet = LOWER(wallet);
@@ -109,7 +109,7 @@ docker compose logs bot
 **PostgreSQL проблемы:**
 ```bash
 docker compose logs postgres
-docker compose exec postgres psql -U whale_user -d polymarket
+docker compose exec db psql -U whale_user -d whale_tracker
 ```
 
 **Redis проблемы:**
