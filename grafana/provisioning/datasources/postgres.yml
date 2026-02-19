@@ -4,11 +4,12 @@ datasources:
   - name: PostgreSQL
     type: postgres
     uid: postgres
+    access: proxy
     url: db:5432
     database: whale_tracker
-    user: ${POSTGRES_USER}
+    user: $POSTGRES_USER
     secureJsonData:
-      password: ${POSTGRES_PASSWORD}
+      password: $POSTGRES_PASSWORD
     jsonData:
       sslmode: disable
       maxOpenConns: 5
@@ -16,5 +17,4 @@ datasources:
       connMaxLifetime: 14400
       postgresVersion: 1500
       timescaledb: false
-      database: whale_tracker
-    editable: true
+    editable: false
