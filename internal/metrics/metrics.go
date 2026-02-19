@@ -54,6 +54,11 @@ var (
 		Help: "Кликов по трекинговым ссылкам",
 	}, []string{"type"})
 
+	GeoClicksTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "bot_link_clicks_by_country_total",
+		Help: "Кликов по трекинговым ссылкам с разбивкой по стране",
+	}, []string{"country"})
+
 	// ── Filtering ──────────────────────────────────────────────────────────
 	FilteredVolume = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "bot_trades_filtered_volume_total",
@@ -105,9 +110,9 @@ var (
 	})
 
 	// ── Users ──────────────────────────────────────────────────────────────
-	ActiveUsers = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "bot_active_users",
-		Help: "Активных подписчиков бота",
+	AllUsers = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "bot_all_users",
+		Help: "Всего подписчиков бота (текущих)",
 	})
 
 	WatchlistEntries = promauto.NewGauge(prometheus.GaugeOpts{

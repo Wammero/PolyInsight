@@ -28,7 +28,7 @@ func StartSubCache() {
 		subMu.Lock()
 		subCache = subs
 		subMu.Unlock()
-		metrics.ActiveUsers.Set(float64(len(subs)))
+		metrics.AllUsers.Set(float64(len(subs)))
 	}
 	refresh() // initial load before returning so first alerts are ready
 	go func() {

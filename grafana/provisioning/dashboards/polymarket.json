@@ -66,11 +66,11 @@
       },
       "targets": [
         {
-          "expr": "rate(bot_ws_messages_total[1m])",
+          "expr": "rate(bot_ws_messages_total[$__rate_interval])",
           "legendFormat": "Получено"
         },
         {
-          "expr": "rate(bot_ws_dropped_total[1m])",
+          "expr": "rate(bot_ws_dropped_total[$__rate_interval])",
           "legendFormat": "Сброшено (буфер полон)"
         }
       ]
@@ -235,7 +235,7 @@
       },
       "targets": [
         {
-          "expr": "bot_ws_reconnects_total",
+          "expr": "increase(bot_ws_reconnects_total[$__range])",
           "legendFormat": "Переподключений"
         }
       ]
@@ -278,7 +278,7 @@
       },
       "targets": [
         {
-          "expr": "bot_ws_dropped_total",
+          "expr": "increase(bot_ws_dropped_total[$__range])",
           "legendFormat": "Сброшено"
         }
       ]
@@ -345,7 +345,7 @@
           "legendFormat": "В очереди"
         },
         {
-          "expr": "rate(bot_send_queue_dropped_total[1m])",
+          "expr": "rate(bot_send_queue_dropped_total[$__rate_interval])",
           "legendFormat": "Сброшено/с"
         }
       ]
@@ -378,15 +378,15 @@
       },
       "targets": [
         {
-          "expr": "rate(bot_whale_events_total[1m])",
+          "expr": "rate(bot_whale_events_total[$__rate_interval])",
           "legendFormat": "🐋 Киты (>порога)"
         },
         {
-          "expr": "rate(bot_perfect_alerts_total[1m])",
+          "expr": "rate(bot_perfect_alerts_total[$__rate_interval])",
           "legendFormat": "📣 Алерты TG"
         },
         {
-          "expr": "rate(bot_follow_alerts_total[1m])",
+          "expr": "rate(bot_follow_alerts_total[$__rate_interval])",
           "legendFormat": "👁 Слежка-алерты"
         }
       ]
@@ -419,15 +419,15 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.5,  rate(bot_worker_duration_seconds_bucket[1m]))",
+          "expr": "histogram_quantile(0.5,  rate(bot_worker_duration_seconds_bucket[$__rate_interval]))",
           "legendFormat": "p50"
         },
         {
-          "expr": "histogram_quantile(0.9,  rate(bot_worker_duration_seconds_bucket[1m]))",
+          "expr": "histogram_quantile(0.9,  rate(bot_worker_duration_seconds_bucket[$__rate_interval]))",
           "legendFormat": "p90"
         },
         {
-          "expr": "histogram_quantile(0.99, rate(bot_worker_duration_seconds_bucket[1m]))",
+          "expr": "histogram_quantile(0.99, rate(bot_worker_duration_seconds_bucket[$__rate_interval]))",
           "legendFormat": "p99"
         },
         {
@@ -480,31 +480,31 @@
       },
       "targets": [
         {
-          "expr": "rate(bot_ws_messages_total[1m])",
+          "expr": "rate(bot_ws_messages_total[$__rate_interval])",
           "legendFormat": "📥 Из WS"
         },
         {
-          "expr": "rate(bot_whale_events_total[1m])",
+          "expr": "rate(bot_whale_events_total[$__rate_interval])",
           "legendFormat": "🐋 >порога объёма"
         },
         {
-          "expr": "rate(bot_trades_filtered_volume_total[1m])",
+          "expr": "rate(bot_trades_filtered_volume_total[$__rate_interval])",
           "legendFormat": "❌ Объём мал"
         },
         {
-          "expr": "rate(bot_trades_filtered_banword_total[1m])",
+          "expr": "rate(bot_trades_filtered_banword_total[$__rate_interval])",
           "legendFormat": "❌ Стоп-слово"
         },
         {
-          "expr": "rate(bot_trades_filtered_no_meta_total[1m])",
+          "expr": "rate(bot_trades_filtered_no_meta_total[$__rate_interval])",
           "legendFormat": "❌ Нет метадаты"
         },
         {
-          "expr": "rate(bot_trades_filtered_api_error_total[1m])",
+          "expr": "rate(bot_trades_filtered_api_error_total[$__rate_interval])",
           "legendFormat": "❌ API ошибка"
         },
         {
-          "expr": "rate(bot_perfect_alerts_total[1m])",
+          "expr": "rate(bot_perfect_alerts_total[$__rate_interval])",
           "legendFormat": "✅ Алертов отправлено"
         }
       ]
@@ -547,19 +547,19 @@
       },
       "targets": [
         {
-          "expr": "bot_trades_filtered_volume_total",
+          "expr": "increase(bot_trades_filtered_volume_total[$__range])",
           "legendFormat": "Объём мал"
         },
         {
-          "expr": "bot_trades_filtered_banword_total",
+          "expr": "increase(bot_trades_filtered_banword_total[$__range])",
           "legendFormat": "Стоп-слово"
         },
         {
-          "expr": "bot_trades_filtered_no_meta_total",
+          "expr": "increase(bot_trades_filtered_no_meta_total[$__range])",
           "legendFormat": "Нет метадаты"
         },
         {
-          "expr": "bot_trades_filtered_api_error_total",
+          "expr": "increase(bot_trades_filtered_api_error_total[$__range])",
           "legendFormat": "API ошибка"
         }
       ]
@@ -578,31 +578,45 @@
     },
     {
       "id": 31,
-      "title": "Активных пользователей",
+      "title": "Всего подписчиков",
       "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "gridPos": {
-        "x": 0,
-        "y": 28,
-        "w": 6,
-        "h": 5
-      },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Текущих подписчиков бота (все кто сделал /start и не отписался)",
+      "gridPos": { "x": 0, "y": 28, "w": 6, "h": 5 },
+      "options": { "reduceOptions": { "calcs": ["last"] }, "colorMode": "background" },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": {
-            "fixedColor": "blue",
-            "mode": "fixed"
-          }
+          "color": { "fixedColor": "blue", "mode": "fixed" }
         }
       },
       "targets": [
         {
-          "expr": "bot_active_users",
-          "legendFormat": "Пользователей"
+          "expr": "bot_all_users",
+          "legendFormat": "Подписчиков"
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "title": "Активных (7 дней)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Подписчики, которые открывали бот или нажимали кнопки за последние 7 дней",
+      "gridPos": { "x": 6, "y": 28, "w": 6, "h": 5 },
+      "options": { "reduceOptions": { "calcs": ["last"] }, "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "fixedColor": "green", "mode": "fixed" }
+        }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "rawSql": "SELECT COUNT(*) FROM users WHERE $__timeFilter(last_seen_at)",
+          "format": "table",
+          "refId": "A"
         }
       ]
     },
@@ -661,7 +675,7 @@
       },
       "targets": [
         {
-          "expr": "bot_link_clicks_total",
+          "expr": "sum(increase(bot_link_clicks_total[$__range]))",
           "legendFormat": "Клики"
         }
       ]
@@ -691,7 +705,7 @@
       },
       "targets": [
         {
-          "expr": "bot_perfect_alerts_total",
+          "expr": "increase(bot_perfect_alerts_total[$__range])",
           "legendFormat": "Алертов"
         }
       ]
@@ -1051,7 +1065,7 @@
       },
       "targets": [
         {
-          "expr": "sum(bot_link_clicks_total)",
+          "expr": "sum(increase(bot_link_clicks_total[$__range]))",
           "legendFormat": "Всего",
           "datasource": {
             "type": "prometheus",
@@ -1104,7 +1118,7 @@
       },
       "targets": [
         {
-          "expr": "sum(bot_link_clicks_total{type=\"market\"})",
+          "expr": "sum(increase(bot_link_clicks_total{type=\"market\"}[$__range]))",
           "legendFormat": "Market",
           "datasource": {
             "type": "prometheus",
@@ -1157,7 +1171,7 @@
       },
       "targets": [
         {
-          "expr": "sum(bot_link_clicks_total{type=\"profile\"})",
+          "expr": "sum(increase(bot_link_clicks_total{type=\"profile\"}[$__range]))",
           "legendFormat": "Profile",
           "datasource": {
             "type": "prometheus",
@@ -1210,7 +1224,7 @@
       },
       "targets": [
         {
-          "expr": "sum(bot_link_clicks_total{type=\"debank\"})",
+          "expr": "sum(increase(bot_link_clicks_total{type=\"debank\"}[$__range]))",
           "legendFormat": "DeBank",
           "datasource": {
             "type": "prometheus",
@@ -1263,7 +1277,7 @@
       },
       "targets": [
         {
-          "expr": "sum(bot_link_clicks_total{type=\"polygonscan\"})",
+          "expr": "sum(increase(bot_link_clicks_total{type=\"pgsan\"}[$__range]))",
           "legendFormat": "PolygonScan",
           "datasource": {
             "type": "prometheus",
@@ -1368,7 +1382,7 @@
       },
       "targets": [
         {
-          "expr": "rate(bot_link_clicks_total{type=\"market\"}[5m])",
+          "expr": "rate(bot_link_clicks_total{type=\"market\"}[$__rate_interval])",
           "legendFormat": "Сделка",
           "datasource": {
             "type": "prometheus",
@@ -1376,7 +1390,7 @@
           }
         },
         {
-          "expr": "rate(bot_link_clicks_total{type=\"profile\"}[5m])",
+          "expr": "rate(bot_link_clicks_total{type=\"profile\"}[$__rate_interval])",
           "legendFormat": "Профиль",
           "datasource": {
             "type": "prometheus",
@@ -1384,7 +1398,7 @@
           }
         },
         {
-          "expr": "rate(bot_link_clicks_total{type=\"debank\"}[5m])",
+          "expr": "rate(bot_link_clicks_total{type=\"debank\"}[$__rate_interval])",
           "legendFormat": "DeBank",
           "datasource": {
             "type": "prometheus",
@@ -1392,12 +1406,69 @@
           }
         },
         {
-          "expr": "rate(bot_link_clicks_total{type=\"polygonscan\"}[5m])",
+          "expr": "rate(bot_link_clicks_total{type=\"pgsan\"}[$__rate_interval])",
           "legendFormat": "PolygonScan",
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           }
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "type": "barchart",
+      "title": "🌍 Клики по странам",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 63 },
+      "options": {
+        "orientation": "horizontal",
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" },
+        "xField": "country",
+        "colorByField": "country"
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (country) (increase(bot_link_clicks_by_country_total[$__range]))",
+          "legendFormat": "{{country}}",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "type": "table",
+      "title": "🗺️ Топ категорий по странам (PostgreSQL)",
+      "description": "Какие категории рынков нажимают пользователи из каждой страны",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 71 },
+      "options": { "sortBy": [{ "displayName": "Кликов", "desc": true }] },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "rawSql": "SELECT country, category, COUNT(*) AS clicks FROM click_events WHERE category != '' AND country != 'unknown' AND clicked_at >= NOW() - INTERVAL '30 days' GROUP BY country, category ORDER BY clicks DESC LIMIT 50",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "type": "table",
+      "title": "📊 Топ категорий (все страны)",
+      "description": "Самые популярные категории рынков по кликам",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 71 },
+      "options": { "sortBy": [{ "displayName": "Кликов", "desc": true }] },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "rawSql": "SELECT category, COUNT(*) AS clicks, COUNT(DISTINCT country) AS countries FROM click_events WHERE category != '' AND clicked_at >= NOW() - INTERVAL '30 days' GROUP BY category ORDER BY clicks DESC",
+          "format": "table",
+          "refId": "A"
         }
       ]
     }

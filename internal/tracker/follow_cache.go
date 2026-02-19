@@ -3,6 +3,7 @@ package tracker
 import (
 	"context"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,9 +40,10 @@ func refreshFollowCache() {
 }
 
 // GetFollowers returns the list of chatIDs watching the given wallet address.
+// Wallet addresses are case-insensitive; normalized to lowercase for lookup.
 // Safe for concurrent use.
 func GetFollowers(wallet string) []int64 {
 	followMu.RLock()
 	defer followMu.RUnlock()
-	return followCache[wallet]
+	return followCache[strings.ToLower(wallet)]
 }

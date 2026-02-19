@@ -63,7 +63,9 @@ func GetTradeCount(ctx context.Context, client *http.Client, wallet string) int 
 	var d struct {
 		Traded int `json:"traded"`
 	}
-	json.NewDecoder(resp.Body).Decode(&d)
+	if err := json.NewDecoder(resp.Body).Decode(&d); err != nil {
+		return 999 // JSON parse error — treat as API failure to avoid false "0 trades"
+	}
 	cache.SetString(ctx, cacheKey, strconv.Itoa(d.Traded), 10*time.Minute)
 	return d.Traded
 }

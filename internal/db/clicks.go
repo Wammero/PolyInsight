@@ -5,12 +5,24 @@ import (
 	"database/sql"
 )
 
-func RegisterAlert(ctx context.Context, shortID, wallet, slug, marketURL, txHash string, chatID int64) error {
+func RegisterAlert(ctx context.Context, shortID, wallet, slug, marketURL, txHash, category string, chatID int64) error {
 	_, err := DB.ExecContext(ctx,
-		`INSERT INTO alert_clicks (short_id, chat_id, wallet, market_slug, market_url, tx_hash)
-		 VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (short_id) DO NOTHING`,
-		shortID, chatID, wallet, slug, marketURL, txHash)
+		`INSERT INTO alert_clicks (short_id, chat_id, wallet, market_slug, market_url, tx_hash, category)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (short_id) DO NOTHING`,
+		shortID, chatID, wallet, slug, marketURL, txHash, category)
 	return err
+}
+
+// LogClickEvent stores a single click event permanently for analytics.
+// Category is looked up from alert_clicks so it's always consistent.
+func LogClickEvent(ctx context.Context, shortID, country, linkType string) {
+	var category string
+	DB.QueryRowContext(ctx,
+		`SELECT COALESCE(category, '') FROM alert_clicks WHERE short_id=$1`,
+		shortID).Scan(&category)
+	DB.ExecContext(ctx,
+		`INSERT INTO click_events (short_id, country, link_type, category) VALUES ($1, $2, $3, $4)`,
+		shortID, country, linkType, category)
 }
 
 // GetAlertLinks returns the wallet address and tx hash stored for a given shortID.

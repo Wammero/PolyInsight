@@ -26,10 +26,25 @@ func Unsubscribe(ctx context.Context, chatID int64) error {
 	return err
 }
 
-func CountActiveUsers(ctx context.Context) (int, error) {
+// CountAllUsers returns total current subscribers (all rows in users table).
+func CountAllUsers(ctx context.Context) (int, error) {
 	var n int
 	err := DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM users").Scan(&n)
 	return n, err
+}
+
+// CountActiveUsers returns users who interacted with the bot in the last 7 days.
+func CountActiveUsers(ctx context.Context) (int, error) {
+	var n int
+	err := DB.QueryRowContext(ctx,
+		"SELECT COUNT(*) FROM users WHERE last_seen_at >= NOW() - INTERVAL '7 days'").Scan(&n)
+	return n, err
+}
+
+// UpdateLastSeen records the current timestamp for a user on every interaction.
+func UpdateLastSeen(ctx context.Context, chatID int64) {
+	DB.ExecContext(ctx,
+		"UPDATE users SET last_seen_at=NOW() WHERE chat_id=$1", chatID)
 }
 
 // AllSubscribers returns all users with their personal filter settings.

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	tu "github.com/mymmrac/telego/telegoutil"
 
 	"polymarket_go/internal/db"
+	"polymarket_go/internal/geoip"
 	"polymarket_go/internal/metrics"
 	"polymarket_go/internal/polymarket"
 )
@@ -23,6 +25,9 @@ var httpClient = &http.Client{Timeout: 10 * time.Second}
 
 // walletRe validates Ethereum-compatible addresses (0x + 40 hex chars).
 var walletRe = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
+
+// txHashRe validates Polygon/Ethereum transaction hashes (0x + 64 hex chars).
+var txHashRe = regexp.MustCompile(`^0x[0-9a-fA-F]{64}$`)
 
 // StartHandlers begins long-polling and routes all incoming updates.
 func StartHandlers(b *telego.Bot) {
@@ -60,21 +65,21 @@ func HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	switch linkType {
 	case "profile":
 		wallet, _, err := db.GetAlertLinks(ctx, shortID)
-		if err != nil || wallet == "" {
+		if err != nil || !walletRe.MatchString(wallet) {
 			http.NotFound(w, r)
 			return
 		}
 		targetURL = "https://polymarket.com/profile/" + wallet
 	case "debank":
 		wallet, _, err := db.GetAlertLinks(ctx, shortID)
-		if err != nil || wallet == "" {
+		if err != nil || !walletRe.MatchString(wallet) {
 			http.NotFound(w, r)
 			return
 		}
 		targetURL = "https://debank.com/profile/" + wallet
 	case "pgsan":
 		_, txHash, err := db.GetAlertLinks(ctx, shortID)
-		if err != nil || txHash == "" {
+		if err != nil || !txHashRe.MatchString(txHash) {
 			http.NotFound(w, r)
 			return
 		}
@@ -94,6 +99,28 @@ func HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metrics.ClicksTotal.WithLabelValues(linkType).Inc()
+
+	// Geo tracking in background — does not block the redirect.
+	ip := r.Header.Get("X-Real-IP")
+	if ip == "" {
+		// X-Forwarded-For can be "client, proxy1, proxy2" — take first entry only.
+		if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+			ip = strings.TrimSpace(strings.SplitN(fwd, ",", 2)[0])
+		}
+	}
+	if ip == "" {
+		// net.SplitHostPort handles both "1.2.3.4:port" and "[::1]:port" (IPv6).
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err == nil {
+			ip = host
+		}
+	}
+	go func(clientIP, sid, lt string) {
+		country := geoip.Country(context.Background(), clientIP)
+		metrics.GeoClicksTotal.WithLabelValues(country).Inc()
+		db.LogClickEvent(context.Background(), sid, country, lt)
+	}(ip, shortID, linkType)
+
 	http.Redirect(w, r, targetURL, http.StatusFound)
 }
 
@@ -103,6 +130,8 @@ func handleMessage(b *telego.Bot, msg *telego.Message) {
 	ctx := context.Background()
 	chatID := msg.Chat.ID
 	text := strings.TrimSpace(msg.Text)
+
+	go db.UpdateLastSeen(ctx, chatID)
 
 	if state, ok := getSession(chatID); ok {
 		handleSettingsInput(b, ctx, chatID, state, text)
@@ -295,6 +324,8 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 	chatID := cb.From.ID
 	data := cb.Data
 
+	go db.UpdateLastSeen(ctx, chatID)
+
 	// answered tracks whether AnswerCallbackQuery was already sent explicitly.
 	// The defer fires the bare acknowledgment only if no explicit answer was sent,
 	// preventing the double-answer bug on watch:add/del and category save.
@@ -412,6 +443,15 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 			})
 			return
 		}
+		if err != nil {
+			log.Printf("watch:add chatID=%d wallet=%s: %v", chatID, wallet, err)
+			b.AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
+				CallbackQueryID: cb.ID,
+				Text:            "❌ Ошибка. Попробуйте позже.",
+				ShowAlert:       true,
+			})
+			return
+		}
 		b.AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: cb.ID,
 			Text:            "🔔 Теперь вы следите за этим кошельком!",
@@ -421,7 +461,7 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 			b.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
 				ChatID:      tu.ID(chatID),
 				MessageID:   msg.MessageID,
-				ReplyMarkup: AlertKeyboard(wallet, extractShortID(msg), true),
+				ReplyMarkup: AlertKeyboard(wallet, true),
 			})
 		}
 
@@ -440,25 +480,10 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 			b.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
 				ChatID:      tu.ID(chatID),
 				MessageID:   msg.MessageID,
-				ReplyMarkup: AlertKeyboard(wallet, extractShortID(msg), false),
+				ReplyMarkup: AlertKeyboard(wallet, false),
 			})
 		}
 	}
-}
-
-// extractShortID scans a message's inline keyboard for a "click:" callback and returns the shortID.
-func extractShortID(msg *telego.Message) string {
-	if msg.ReplyMarkup == nil {
-		return ""
-	}
-	for _, row := range msg.ReplyMarkup.InlineKeyboard {
-		for _, btn := range row {
-			if strings.HasPrefix(btn.CallbackData, "click:") {
-				return strings.TrimPrefix(btn.CallbackData, "click:")
-			}
-		}
-	}
-	return ""
 }
 
 // handleCategoryCallback manages category toggle state in-memory (no DB until Save).
@@ -639,8 +664,15 @@ func handleWebAppData(b *telego.Bot, msg *telego.Message) {
 				WithReplyMarkup(MainMenuKeyboard()))
 			return
 		}
-		if err := db.AddWatch(ctx, chatID, body.Wallet, ""); err == db.ErrWatchlistFull {
+		addErr := db.AddWatch(ctx, chatID, body.Wallet, "")
+		if addErr == db.ErrWatchlistFull {
 			b.SendMessage(ctx, tu.Message(tu.ID(chatID), "❌ Лимит: можно следить максимум за 10 кошельками").
+				WithReplyMarkup(MainMenuKeyboard()))
+			return
+		}
+		if addErr != nil {
+			log.Printf("add_watch chatID=%d wallet=%s: %v", chatID, body.Wallet, addErr)
+			b.SendMessage(ctx, tu.Message(tu.ID(chatID), "❌ Ошибка при добавлении. Попробуйте позже.").
 				WithReplyMarkup(MainMenuKeyboard()))
 			return
 		}

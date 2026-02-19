@@ -33,7 +33,7 @@ func MainMenuKeyboard() *telego.ReplyKeyboardMarkup {
 
 // AlertKeyboard builds the inline keyboard shown under each whale alert.
 // isWatch indicates the current user is already following this wallet.
-func AlertKeyboard(wallet, shortID string, isWatch bool) *telego.InlineKeyboardMarkup {
+func AlertKeyboard(wallet string, isWatch bool) *telego.InlineKeyboardMarkup {
 	watchLabel := "🔔 Следить"
 	watchCallback := "watch:add:" + wallet
 	if isWatch {

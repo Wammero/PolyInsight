@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"fmt"
+	"html"
 	"strings"
 	"time"
 
@@ -48,7 +49,7 @@ func SendAlert(
 		p.Slug, p.TransactionHash)
 
 	// Register alert for click tracking (first occurrence wins due to ON CONFLICT DO NOTHING).
-	db.RegisterAlert(ctx, shortID, p.ProxyWallet, p.Slug, marketURL, p.TransactionHash, 0)
+	db.RegisterAlert(ctx, shortID, p.ProxyWallet, p.Slug, marketURL, p.TransactionHash, meta.Category, 0)
 
 	// Build tracked URLs.
 	// Priority: redirect server (self-hosted, full Prometheus metrics) >
@@ -83,6 +84,12 @@ func SendAlert(
 		}
 		name = walletShort
 	}
+	// Escape user-controlled fields before embedding into HTML messages.
+	// Polymarket market titles and pseudonyms are user-created and can contain
+	// arbitrary HTML tags (e.g. <a href="phishing-site.com">...</a>).
+	name = html.EscapeString(name)
+	safeTitle := html.EscapeString(p.Title)
+	safeOutcome := html.EscapeString(strings.ToUpper(p.Outcome))
 
 	// Win-rate line with wins/losses counts (closed positions only).
 	wrLine := "  🎯 Результат: —"
@@ -92,7 +99,7 @@ func SendAlert(
 
 	// P&L line — all-time, optional.
 	playerBlock := wrLine
-	if stats.TotalPnL > -999998 {
+	if stats.TotalPnL > -999999 {
 		playerBlock += fmt.Sprintf("\n  💼 P&L: %s", fmtPnL(stats.TotalPnL))
 	}
 
@@ -114,8 +121,8 @@ func SendAlert(
 		trades,
 		name,
 		playerBlock,
-		p.Title,
-		strings.ToUpper(p.Outcome),
+		safeTitle,
+		safeOutcome,
 		profileURL, debankURL, pgsanURL,
 	)
 
@@ -153,7 +160,7 @@ func SendAlert(
 		}
 
 		isWatch := followerSet[sub.ChatID]
-		kb := AlertKeyboard(p.ProxyWallet, shortID, isWatch)
+		kb := AlertKeyboard(p.ProxyWallet, isWatch)
 
 		msg := tu.Message(tu.ID(sub.ChatID), text+
 			fmt.Sprintf("\n• <a href='%s'>Перейти к сделке ↗</a>", trackURL)).
@@ -190,6 +197,7 @@ func SendFollowAlert(
 			name = p.ProxyWallet
 		}
 	}
+	name = html.EscapeString(name)
 
 	wrLine := "—"
 	if stats.WinRate >= 0 {
@@ -206,8 +214,8 @@ func SendFollowAlert(
 			"🔗 <a href='https://polymarket.com/profile/%s'>Профиль на Polymarket</a>",
 		name,
 		volume, odds,
-		strings.ToUpper(p.Outcome),
-		p.Title,
+		html.EscapeString(strings.ToUpper(p.Outcome)),
+		html.EscapeString(p.Title),
 		trades, wrLine,
 		p.ProxyWallet,
 	)
@@ -221,7 +229,7 @@ func SendFollowAlert(
 
 // fmtPnL formats a P&L value. Returns "—" when unknown (-999999 sentinel).
 func fmtPnL(v float64) string {
-	if v <= -999998 {
+	if v <= -999999 {
 		return "—"
 	}
 	sign := "+"

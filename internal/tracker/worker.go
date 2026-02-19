@@ -44,8 +44,14 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 		p := msg.Payload
 		volume := p.Size * p.Price
 
-		// Global pre-filter: only absolute minimum volume.
-		if volume < cfg.MinWhaleAmount {
+		// Check watchlist BEFORE filtering: watched wallets bypass MinWhaleAmount.
+		// This ensures users receive notifications for ALL trades from their followed wallets,
+		// regardless of global volume thresholds (e.g., $10 bet when MinWhaleAmount=$100).
+		followers := GetFollowers(p.ProxyWallet)
+		isWatched := len(followers) > 0
+
+		// Global pre-filter: only absolute minimum volume (skip for watched wallets).
+		if !isWatched && volume < cfg.MinWhaleAmount {
 			metrics.FilteredVolume.Inc()
 			continue
 		}
@@ -75,9 +81,6 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 
 		// Fetch enriched wallet stats for display.
 		stats := polymarket.GetWalletStats(ctx, sharedClient, p.ProxyWallet)
-
-		// Get watchlist followers for this wallet (from in-memory cache).
-		followers := GetFollowers(p.ProxyWallet)
 
 		// Broadcast regular alert to all matching subscribers.
 		bot.SendAlert(ctx, b, p, trades, stats, meta, startTime, cfg.BaseURL, followers)

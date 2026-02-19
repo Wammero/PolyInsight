@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"strings"
 )
 
 const MaxWatchlistSize = 10
@@ -20,7 +21,13 @@ type Watchlist struct {
 
 // AddWatch adds wallet to the user's watchlist atomically.
 // The COUNT check and INSERT happen in a single statement — eliminates TOCTOU race.
+// Wallet addresses are normalized to lowercase for case-insensitive matching.
 func AddWatch(ctx context.Context, chatID int64, wallet, label string) error {
+	// Ethereum addresses are case-insensitive, but Go string comparison is not.
+	// Normalize to lowercase to prevent watchlist mismatches when WebSocket/user
+	// input uses different casing (e.g., 0xABC vs 0xabc).
+	wallet = strings.ToLower(wallet)
+
 	res, err := DB.ExecContext(ctx, `
 		INSERT INTO watchlist (chat_id, wallet, label)
 		SELECT $1, $2, $3
@@ -51,6 +58,7 @@ func AddWatch(ctx context.Context, chatID int64, wallet, label string) error {
 }
 
 func RemoveWatch(ctx context.Context, chatID int64, wallet string) error {
+	wallet = strings.ToLower(wallet)
 	_, err := DB.ExecContext(ctx,
 		"DELETE FROM watchlist WHERE chat_id=$1 AND wallet=$2", chatID, wallet)
 	return err
@@ -75,6 +83,7 @@ func GetWatchlist(ctx context.Context, chatID int64) ([]Watchlist, error) {
 }
 
 func IsWatched(ctx context.Context, chatID int64, wallet string) (bool, error) {
+	wallet = strings.ToLower(wallet)
 	var count int
 	err := DB.QueryRowContext(ctx,
 		"SELECT COUNT(*) FROM watchlist WHERE chat_id=$1 AND wallet=$2", chatID, wallet).Scan(&count)

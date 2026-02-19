@@ -63,8 +63,23 @@ func migrate() {
 			clicks     INT DEFAULT 0,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
-		// Add tx_hash column if it doesn't exist (safe to run on existing DBs).
-		`ALTER TABLE alert_clicks ADD COLUMN IF NOT EXISTS tx_hash TEXT DEFAULT ''`,
+		// Add last_seen_at to track user activity (safe on existing DBs).
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAULT NOW()`,
+		// Add tx_hash and category columns if they don't exist (safe on existing DBs).
+		`ALTER TABLE alert_clicks ADD COLUMN IF NOT EXISTS tx_hash  TEXT DEFAULT ''`,
+		`ALTER TABLE alert_clicks ADD COLUMN IF NOT EXISTS category TEXT DEFAULT ''`,
+		// Individual click events — permanent analytics storage.
+		`CREATE TABLE IF NOT EXISTS click_events (
+			id         SERIAL PRIMARY KEY,
+			short_id   TEXT             DEFAULT '',
+			country    TEXT             DEFAULT 'unknown',
+			link_type  TEXT             DEFAULT 'market',
+			category   TEXT             DEFAULT '',
+			clicked_at TIMESTAMPTZ      DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS click_events_country_idx  ON click_events (country)`,
+		`CREATE INDEX IF NOT EXISTS click_events_category_idx ON click_events (category)`,
+		`CREATE INDEX IF NOT EXISTS click_events_clicked_at_idx ON click_events (clicked_at DESC)`,
 		`CREATE TABLE IF NOT EXISTS watchlist (
 			id         SERIAL PRIMARY KEY,
 			chat_id    BIGINT NOT NULL REFERENCES users(chat_id) ON DELETE CASCADE,

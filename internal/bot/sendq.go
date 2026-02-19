@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"log"
+	"sync/atomic"
 	"time"
 
 	"github.com/mymmrac/telego"
@@ -18,7 +19,10 @@ const (
 	sendInterval = 40 * time.Millisecond
 )
 
-var sendCh chan *telego.SendMessageParams
+var (
+	sendCh       chan *telego.SendMessageParams
+	sendChClosed atomic.Bool
+)
 
 // StartSendQueue starts the single rate-limited Telegram sender goroutine.
 // All outgoing messages go through here — guarantees we never exceed Telegram's rate limit.
@@ -46,7 +50,11 @@ func StartSendQueue(b *telego.Bot) {
 
 // Enqueue adds a message to the rate-limited send queue.
 // Non-blocking: if the queue is full (circuit breaker), the message is dropped and counted.
+// Safe to call concurrently with DrainAndClose — drops silently if the queue is already closed.
 func Enqueue(params *telego.SendMessageParams) {
+	if sendChClosed.Load() {
+		return
+	}
 	select {
 	case sendCh <- params:
 	default:
@@ -61,5 +69,8 @@ func DrainAndClose() {
 	for len(sendCh) > 0 && time.Now().Before(deadline) {
 		time.Sleep(100 * time.Millisecond)
 	}
+	// Mark closed before closing the channel so concurrent Enqueue calls
+	// see the flag and return early, preventing "send on closed channel" panics.
+	sendChClosed.Store(true)
 	close(sendCh)
 }
