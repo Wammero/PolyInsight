@@ -1449,7 +1449,7 @@
       "targets": [
         {
           "datasource": { "type": "postgres", "uid": "postgres" },
-          "rawSql": "SELECT country, category, COUNT(*) AS clicks FROM click_events WHERE category != '' AND country != 'unknown' AND clicked_at >= NOW() - INTERVAL '30 days' GROUP BY country, category ORDER BY clicks DESC LIMIT 50",
+          "rawSql": "SELECT country, category, COUNT(*) AS clicks FROM click_events WHERE $__timeFilter(clicked_at) GROUP BY country, category ORDER BY clicks DESC LIMIT 50",
           "format": "table",
           "refId": "A"
         }
@@ -1466,7 +1466,7 @@
       "targets": [
         {
           "datasource": { "type": "postgres", "uid": "postgres" },
-          "rawSql": "SELECT category, COUNT(*) AS clicks, COUNT(DISTINCT country) AS countries FROM click_events WHERE category != '' AND clicked_at >= NOW() - INTERVAL '30 days' GROUP BY category ORDER BY clicks DESC",
+          "rawSql": "SELECT category, COUNT(*) AS clicks, COUNT(DISTINCT country) AS countries FROM click_events WHERE $__timeFilter(clicked_at) GROUP BY category ORDER BY clicks DESC",
           "format": "table",
           "refId": "A"
         }
