@@ -675,7 +675,7 @@
       },
       "targets": [
         {
-          "expr": "sum(delta(bot_link_clicks_total[$__range]))",
+          "expr": "ceil(sum(increase(bot_link_clicks_total[$__range])))",
           "legendFormat": "Клики"
         }
       ]
@@ -1065,7 +1065,7 @@
       },
       "targets": [
         {
-          "expr": "sum(delta(bot_link_clicks_total[$__range]))",
+          "expr": "ceil(sum(increase(bot_link_clicks_total[$__range])))",
           "legendFormat": "Всего",
           "datasource": {
             "type": "prometheus",
@@ -1118,7 +1118,7 @@
       },
       "targets": [
         {
-          "expr": "sum(delta(bot_link_clicks_total{type=\"market\"}[$__range]))",
+          "expr": "ceil(sum(increase(bot_link_clicks_total{type=\"market\"}[$__range])))",
           "legendFormat": "Market",
           "datasource": {
             "type": "prometheus",
@@ -1171,7 +1171,7 @@
       },
       "targets": [
         {
-          "expr": "sum(delta(bot_link_clicks_total{type=\"profile\"}[$__range]))",
+          "expr": "ceil(sum(increase(bot_link_clicks_total{type=\"profile\"}[$__range])))",
           "legendFormat": "Profile",
           "datasource": {
             "type": "prometheus",
@@ -1224,7 +1224,7 @@
       },
       "targets": [
         {
-          "expr": "sum(delta(bot_link_clicks_total{type=\"debank\"}[$__range]))",
+          "expr": "ceil(sum(increase(bot_link_clicks_total{type=\"debank\"}[$__range])))",
           "legendFormat": "DeBank",
           "datasource": {
             "type": "prometheus",
@@ -1277,7 +1277,7 @@
       },
       "targets": [
         {
-          "expr": "sum(delta(bot_link_clicks_total{type=\"pgsan\"}[$__range]))",
+          "expr": "ceil(sum(increase(bot_link_clicks_total{type=\"pgsan\"}[$__range])))",
           "legendFormat": "PolygonScan",
           "datasource": {
             "type": "prometheus",
@@ -1288,7 +1288,7 @@
     },
     {
       "id": 66,
-      "title": "Клики по ссылкам по типу",
+      "title": "Клики по ссылкам (в секунду)",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -1311,7 +1311,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "reqps",
           "custom": {
             "lineWidth": 2,
             "fillOpacity": 10
@@ -1382,7 +1382,7 @@
       },
       "targets": [
         {
-          "expr": "increase(bot_link_clicks_total{type=\"market\"}[$__interval]) > 0",
+          "expr": "rate(bot_link_clicks_total{type=\"market\"}[$__rate_interval])",
           "legendFormat": "Сделка",
           "datasource": {
             "type": "prometheus",
@@ -1390,7 +1390,7 @@
           }
         },
         {
-          "expr": "increase(bot_link_clicks_total{type=\"profile\"}[$__interval]) > 0",
+          "expr": "rate(bot_link_clicks_total{type=\"profile\"}[$__rate_interval])",
           "legendFormat": "Профиль",
           "datasource": {
             "type": "prometheus",
@@ -1398,7 +1398,7 @@
           }
         },
         {
-          "expr": "increase(bot_link_clicks_total{type=\"debank\"}[$__interval]) > 0",
+          "expr": "rate(bot_link_clicks_total{type=\"debank\"}[$__rate_interval])",
           "legendFormat": "DeBank",
           "datasource": {
             "type": "prometheus",
@@ -1406,7 +1406,7 @@
           }
         },
         {
-          "expr": "increase(bot_link_clicks_total{type=\"pgsan\"}[$__interval]) > 0",
+          "expr": "rate(bot_link_clicks_total{type=\"pgsan\"}[$__rate_interval])",
           "legendFormat": "PolygonScan",
           "datasource": {
             "type": "prometheus",
