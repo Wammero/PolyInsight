@@ -32,18 +32,18 @@ The bot solves this by doing three things:
 - **Instant whale alerts** with full wallet context (W/L ratio, total P&L, trade history)
 - **Fully personalized filters**: minimum bet amount, "newbie" threshold (max N trades ever), minimum odds multiplier, and market categories
 - **20 market categories** supported: politics, elections, crypto, finance, economy, geopolitics, tech, culture, sports (NBA, NFL, NHL, UFC, tennis, esports, cricket, rugby, baseball, table tennis, and more)
-- **Wallet watchlist** — follow up to 10 specific wallets and receive a dedicated notification every time they trade, regardless of your global filters
+- **Wallet watchlist** — follow up to 10 specific wallets and receive a dedicated notification every time they trade, regardless of your global filters (watchlist alerts bypass all volume/odds/category filters)
 - **Telegram Mini App** for settings management — sliders, manual input, category selector with Telegram CloudStorage sync (category selections persist across sessions automatically)
 - **One-click navigation** — inline buttons in every alert to view market, check DeBank portfolio, and inspect the transaction on PolygonScan
-- **Click tracking** — optional redirect server to track link engagement per alert
 
 ### Technical
 - **WebSocket → worker pool** architecture: 32 parallel Go goroutines consume a 5,000-item buffered channel, ensuring no trades are missed even during traffic spikes
-- **In-memory follow cache** — watchlist data is cached in memory and refreshed every 30 seconds; no database query per trade for real-time follow detection
+- **In-memory follow cache** — watchlist data is cached in memory and refreshed every 30 seconds; no database query per trade for instant follow detection
 - **Redis caching** — wallet stats cached 15 minutes, trade counts 10 minutes; Polymarket API is never hammered
 - **PostgreSQL** for persistent user data (settings, watchlist, click tracking)
-- **Prometheus + Grafana** — built-in metrics for alert volume, processing lag, buffer fill, and click counts
+- **Prometheus + Grafana** — comprehensive metrics dashboard with alert volume, processing lag, buffer fill, click analytics, and system resources
 - **Docker Compose** — fully containerized, one-command deployment
+- **CI/CD automation** — GitHub Actions workflow for automatic deployment on git push (zero-downtime updates)
 
 ---
 
@@ -59,13 +59,15 @@ Polymarket WebSocket
    │ Workers │  ×32 goroutines
    └────┬────┘
         │  per trade:
-        │  1. Volume pre-filter (global minimum)
-        │  2. Ban-word filter (title)
-        │  3. Category metadata (Redis-cached)
-        │  4. Trade count → newbie check (Redis-cached)
-        │  5. Wallet stats (Redis-cached, 15 min)
-        │  6. SendAlert → per-user filter + rate-limited queue
-        │  7. SendFollowAlert → in-memory follow cache lookup
+        │  1. Check watchlist (in-memory cache, 30s refresh)
+        │     ├─ If watched → SendFollowAlert (bypass all filters)
+        │     └─ If not watched → continue to filters ↓
+        │  2. Volume pre-filter (global minimum)
+        │  3. Ban-word filter (title)
+        │  4. Category metadata (Redis-cached)
+        │  5. Trade count → newbie check (Redis-cached)
+        │  6. Wallet stats (Redis-cached, 15 min)
+        │  7. SendAlert → per-user filter + rate-limited queue
         ▼
    Telegram Bot API (25 msg/sec rate-limited queue)
 ```
@@ -108,7 +110,25 @@ The watchlist section shows all followed wallets and allows removing them in bul
 
 ## Monitoring Dashboard
 
-Real-time Prometheus + Grafana dashboard — WebSocket throughput, pipeline filtering, alert delivery latency, active users, and system metrics (CPU, RAM, network):
+Real-time Prometheus + Grafana dashboard with comprehensive analytics:
+
+**📊 Operational Metrics:**
+- WebSocket throughput and reconnection tracking
+- Pipeline filtering funnel (volume, category, API errors)
+- Alert delivery latency and processing time (p50/p90/p99)
+- Send queue size and dropped messages
+- System resources (CPU, RAM, disk, network)
+
+**👥 User Analytics:**
+- Total subscribers and active users (time-range filtered)
+- Watchlist size and follow alerts
+- Click tracking by link type (market, profile, DeBank, PolygonScan)
+
+**🌍 Geographic & Category Intelligence:**
+- Click distribution by country (automatic GeoIP detection)
+- Most popular market categories by region (e.g., US users prefer politics, crypto traders follow DeFi markets)
+- Category performance analysis (which topics drive the most engagement)
+- Cross-regional trends in prediction market interests
 
 ![Grafana Dashboard](assets/grafana-dashboard.png)
 
@@ -153,6 +173,18 @@ All data comes exclusively from public Polymarket APIs:
 
 **Community building** — the Telegram format is inherently social. Users discuss alerts in groups, share interesting wallets, and follow the same trades together — creating a community layer on top of Polymarket activity.
 
+**Regional market intelligence for Polymarket** — the bot collects valuable geographic analytics that can be shared with Polymarket:
+- Which regions engage with which market categories (e.g., US users prefer politics/elections, Asian markets follow crypto/finance)
+- Geographic distribution of prediction market interest (country-level engagement patterns)
+- Regional trends in whale activity and high-conviction bets
+- Category performance by geography (which topics drive clicks in different countries)
+
+This data helps Polymarket understand:
+- Where to focus regional marketing campaigns
+- Which market categories to promote in different countries
+- Content localization opportunities (e.g., create more sports markets for regions that engage heavily with sports predictions)
+- Emerging geographic markets for prediction trading
+
 ---
 
 ## Current Status
@@ -165,19 +197,71 @@ The bot is fully functional and deployed. It is actively processing Polymarket t
 - ✅ Wallet watchlist with real-time follow notifications (max 10 wallets)
 - ✅ Telegram Mini App for settings (GitHub Pages, no server required)
 - ✅ Rate-limited Telegram send queue (25 msg/sec, capacity 20,000)
-- ✅ Prometheus/Grafana monitoring
+- ✅ Prometheus/Grafana monitoring with comprehensive analytics (geo, category, performance)
 - ✅ Full Docker Compose deployment
+- ✅ Automated CI/CD deployment via GitHub Actions
 
 ---
 
-## Grant Usage
+## Roadmap
 
-The grant would be used to:
+### Planned Features
 
-1. **Scale infrastructure** — move from local deployment to a cloud VPS for 24/7 uptime and lower latency to Polymarket's WebSocket
-2. **Expand language support** — add English-language alerts and UI to reach a global audience beyond the current Russian-speaking user base
-3. **Enhance alert quality** — integrate additional on-chain signals (wallet age, historical category performance, open position size) to make alerts more informative
-4. **Bot discovery** — run Telegram community outreach and create educational content showing how to use whale signals on Polymarket
+**📊 Paper Trading / Test Balance**
+- Virtual balance tracker to test whale-following strategies
+- Users can "copy" whale trades with virtual funds to measure ROI before risking real money
+- Historical performance tracking: see if following specific wallets would have been profitable
+- Leaderboard of most profitable wallets to follow
+- **Goal:** Let users validate the effectiveness of whale signals with data before committing capital
+
+**🌐 Multi-language Support**
+- English interface and alerts (currently Russian-only)
+- Expand user base to global Polymarket community
+
+**🎯 Enhanced Filtering by Whale Performance**
+- Filter by minimum P&L (e.g., only show whales with +$5,000 total profit)
+- Filter by win rate (e.g., only alert on whales with >60% win rate)
+- Filter by total profit threshold (exclude losing whales entirely)
+- Combined filters (e.g., "whales with +$10k profit AND 70%+ win rate")
+- **Goal:** Let users follow only proven successful traders, not random large bets
+
+**🔗 Advanced Wallet Analytics**
+- On-chain wallet age detection
+- Category-specific performance (e.g., "this wallet is 75% accurate in crypto markets")
+- Open position size tracking
+- Correlation analysis between whale bets and market outcomes
+- Historical performance trends (improving vs declining traders)
+
+**🤖 Smart Notifications**
+- ML-based alert prioritization (learn which whale signals each user actually clicks)
+- Notification grouping during high-volume periods
+- "Whale consensus" alerts (when multiple followed wallets bet on the same outcome)
+
+---
+
+## Grant Request
+
+The grant would be used to expand infrastructure and develop features that increase Polymarket user engagement:
+
+### Infrastructure ($XXX/month)
+1. **VPS hosting** — professional cloud server for 24/7 uptime with 99.9% SLA and low-latency connection to Polymarket's WebSocket
+2. **Custom domain** — professional domain for redirect tracking, Mini App hosting, and public API endpoints
+3. **Website development** — public landing page showcasing bot features, whale leaderboards, and onboarding tutorials
+4. **Database scaling** — PostgreSQL managed instance for growing user base and historical analytics storage
+
+### Feature Development
+1. **Paper trading system** — virtual balance tracker to let users test whale-following strategies before using real money
+   - Track hypothetical ROI from copying whale bets
+   - Identify most profitable wallets to follow
+   - Data-driven validation of whale signals
+2. **English localization** — expand beyond Russian-speaking audience to reach global Polymarket community
+3. **Advanced wallet analytics** — on-chain signals (wallet age, category-specific win rates, position sizing)
+4. **Public API** — expose whale activity data to third-party developers and researchers
+
+### Growth & Community
+1. **Bot discovery campaigns** — Telegram community outreach in Polymarket/prediction market channels
+2. **Educational content** — tutorials on interpreting whale signals and using the bot effectively
+3. **Integration partnerships** — collaborate with Polymarket traders, analysts, and content creators
 
 ---
 
