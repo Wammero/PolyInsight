@@ -1417,24 +1417,100 @@
     },
     {
       "id": 67,
-      "type": "barchart",
-      "title": "🌍 Клики по странам",
+      "type": "timeseries",
+      "title": "🌍 Клики по странам (во времени)",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 63 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "options": {
-        "orientation": "horizontal",
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "single" },
-        "xField": "country",
-        "colorByField": "country"
+        "tooltip": { "mode": "multi" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "short" }
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "opacity",
+            "showPoints": "auto"
+          }
+        }
       },
       "targets": [
         {
-          "expr": "sum by (country) (increase(bot_link_clicks_by_country_total[$__range]))",
+          "expr": "sum by (country) (rate(bot_link_clicks_by_country_total[$__rate_interval]))",
           "legendFormat": "{{country}}",
-          "datasource": { "type": "prometheus", "uid": "${datasource}" }
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "interval": "",
+          "intervalFactor": 1
+        }
+      ]
+    },
+    {
+      "id": 671,
+      "type": "table",
+      "title": "📊 Всего кликов по странам",
+      "description": "Общее количество кликов из каждой страны за выбранный период",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 71 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "options": {
+        "sortBy": [{ "displayName": "Кликов", "desc": true }],
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Кликов" },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "gradient-gauge"
+              },
+              {
+                "id": "color",
+                "value": { "mode": "palette-classic" }
+              }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "country": "Страна",
+              "Value": "Кликов"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "ceil(sum by (country) (increase(bot_link_clicks_by_country_total[$__range])))",
+          "legendFormat": "{{country}}",
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "format": "table",
+          "instant": true
         }
       ]
     },
@@ -1443,7 +1519,7 @@
       "type": "table",
       "title": "🗺️ Топ категорий по странам (PostgreSQL)",
       "description": "Какие категории рынков нажимают пользователи из каждой страны",
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 71 },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 79 },
       "options": { "sortBy": [{ "displayName": "Кликов", "desc": true }] },
       "fieldConfig": { "defaults": { "unit": "short" } },
       "targets": [
@@ -1460,7 +1536,7 @@
       "type": "table",
       "title": "📊 Топ категорий (все страны)",
       "description": "Самые популярные категории рынков по кликам",
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 71 },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 79 },
       "options": { "sortBy": [{ "displayName": "Кликов", "desc": true }] },
       "fieldConfig": { "defaults": { "unit": "short" } },
       "targets": [
