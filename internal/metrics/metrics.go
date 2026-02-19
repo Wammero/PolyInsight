@@ -52,12 +52,12 @@ var (
 	ClicksTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "bot_link_clicks_total",
 		Help: "Кликов по трекинговым ссылкам",
-	}, []string{"type"})
+	}, []string{"type", "category"})
 
 	GeoClicksTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "bot_link_clicks_by_country_total",
 		Help: "Кликов по трекинговым ссылкам с разбивкой по стране",
-	}, []string{"country"})
+	}, []string{"country", "category"})
 
 	// ── Filtering ──────────────────────────────────────────────────────────
 	FilteredVolume = promauto.NewCounter(prometheus.CounterOpts{

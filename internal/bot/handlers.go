@@ -98,7 +98,14 @@ func HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		targetURL = marketURL
 	}
 
-	metrics.ClicksTotal.WithLabelValues(linkType).Inc()
+	// Get category for metrics
+	var category string
+	db.DB.QueryRowContext(ctx, "SELECT COALESCE(category, 'unknown') FROM alert_clicks WHERE short_id=$1", shortID).Scan(&category)
+	if category == "" {
+		category = "unknown"
+	}
+
+	metrics.ClicksTotal.WithLabelValues(linkType, category).Inc()
 
 	// Geo tracking in background — does not block the redirect.
 	ip := r.Header.Get("X-Real-IP")
@@ -115,11 +122,11 @@ func HandleRedirect(w http.ResponseWriter, r *http.Request) {
 			ip = host
 		}
 	}
-	go func(clientIP, sid, lt string) {
+	go func(clientIP, sid, lt, cat string) {
 		country := geoip.Country(context.Background(), clientIP)
-		metrics.GeoClicksTotal.WithLabelValues(country).Inc()
+		metrics.GeoClicksTotal.WithLabelValues(country, cat).Inc()
 		db.LogClickEvent(context.Background(), sid, country, lt)
-	}(ip, shortID, linkType)
+	}(ip, shortID, linkType, category)
 
 	http.Redirect(w, r, targetURL, http.StatusFound)
 }
@@ -415,7 +422,13 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 			b.SendMessage(ctx, tu.Message(tu.ID(chatID), "❌ Ссылка не найдена."))
 			return
 		}
-		metrics.ClicksTotal.WithLabelValues("market").Inc()
+		// Get category for metrics
+		var category string
+		db.DB.QueryRowContext(ctx, "SELECT COALESCE(category, 'unknown') FROM alert_clicks WHERE short_id=$1", shortID).Scan(&category)
+		if category == "" {
+			category = "unknown"
+		}
+		metrics.ClicksTotal.WithLabelValues("market", category).Inc()
 		b.SendMessage(ctx, tu.Message(tu.ID(chatID),
 			fmt.Sprintf("🔗 <a href='%s'>Открыть сделку на Polymarket ↗</a>", marketURL),
 		).WithParseMode(telego.ModeHTML).
