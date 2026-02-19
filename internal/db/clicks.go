@@ -18,7 +18,7 @@ func RegisterAlert(ctx context.Context, shortID, wallet, slug, marketURL, txHash
 func LogClickEvent(ctx context.Context, shortID, country, linkType string) {
 	var category string
 	DB.QueryRowContext(ctx,
-		`SELECT COALESCE(category, '') FROM alert_clicks WHERE short_id=$1`,
+		`SELECT COALESCE(NULLIF(category, ''), 'unknown') FROM alert_clicks WHERE short_id=$1`,
 		shortID).Scan(&category)
 	DB.ExecContext(ctx,
 		`INSERT INTO click_events (short_id, country, link_type, category) VALUES ($1, $2, $3, $4)`,

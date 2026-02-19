@@ -11,6 +11,7 @@ datasources:
     secureJsonData:
       password: $POSTGRES_PASSWORD
     jsonData:
+      database: whale_tracker
       sslmode: disable
       maxOpenConns: 5
       maxIdleConns: 2

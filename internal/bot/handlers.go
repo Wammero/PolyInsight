@@ -100,10 +100,7 @@ func HandleRedirect(w http.ResponseWriter, r *http.Request) {
 
 	// Get category for metrics
 	var category string
-	db.DB.QueryRowContext(ctx, "SELECT COALESCE(category, 'unknown') FROM alert_clicks WHERE short_id=$1", shortID).Scan(&category)
-	if category == "" {
-		category = "unknown"
-	}
+	db.DB.QueryRowContext(ctx, "SELECT COALESCE(NULLIF(category, ''), 'unknown') FROM alert_clicks WHERE short_id=$1", shortID).Scan(&category)
 
 	metrics.ClicksTotal.WithLabelValues(linkType, category).Inc()
 
@@ -424,10 +421,7 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 		}
 		// Get category for metrics
 		var category string
-		db.DB.QueryRowContext(ctx, "SELECT COALESCE(category, 'unknown') FROM alert_clicks WHERE short_id=$1", shortID).Scan(&category)
-		if category == "" {
-			category = "unknown"
-		}
+		db.DB.QueryRowContext(ctx, "SELECT COALESCE(NULLIF(category, ''), 'unknown') FROM alert_clicks WHERE short_id=$1", shortID).Scan(&category)
 		metrics.ClicksTotal.WithLabelValues("market", category).Inc()
 		b.SendMessage(ctx, tu.Message(tu.ID(chatID),
 			fmt.Sprintf("🔗 <a href='%s'>Открыть сделку на Polymarket ↗</a>", marketURL),
