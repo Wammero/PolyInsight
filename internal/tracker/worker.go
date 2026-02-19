@@ -82,12 +82,12 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 		// Fetch enriched wallet stats for display.
 		stats := polymarket.GetWalletStats(ctx, sharedClient, p.ProxyWallet)
 
-		// Broadcast regular alert to all matching subscribers.
+		// Broadcast alert to all matching subscribers.
+		// Followers bypass filters and get "🔔 ВАШ КИТ" header instead of "КИТ-НОВИЧОК".
 		bot.SendAlert(ctx, b, p, trades, stats, meta, startTime, cfg.BaseURL, followers)
 
-		// Send dedicated "your followed wallet traded" notification to followers.
+		// Track follow alerts metric.
 		if len(followers) > 0 {
-			bot.SendFollowAlert(ctx, b, p, trades, stats, meta, followers)
 			metrics.FollowAlerts.Add(float64(len(followers)))
 		}
 

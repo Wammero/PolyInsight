@@ -103,29 +103,6 @@ func SendAlert(
 		playerBlock += fmt.Sprintf("\n  💼 P&L: %s", fmtPnL(stats.TotalPnL))
 	}
 
-	text := fmt.Sprintf(
-		"%s <b>КИТ-НОВИЧОК: %s</b>\n\n"+
-			"💰 <b>Сумма:</b> $%.0f\n"+
-			"📊 <b>Коэф:</b> x%.2f (%.1f%%)\n"+
-			"📈 <b>Всего сделок:</b> %d\n"+
-			"👤 <b>Игрок:</b> <code>%s</code>\n"+
-			"%s\n\n"+
-			"🎯 <b>Рынок:</b> %s\n"+
-			"📌 <b>Ставка на:</b> %s\n\n"+
-			"🔗 <b>Ссылки:</b>\n"+
-			"• <a href='%s'>Профиль Polymarket</a>\n"+
-			"• <a href='%s'>Портфель DeBank</a>\n"+
-			"• <a href='%s'>PolygonScan</a>",
-		meta.Emoji, strings.ToUpper(meta.Label),
-		volume, odds, probability,
-		trades,
-		name,
-		playerBlock,
-		safeTitle,
-		safeOutcome,
-		profileURL, debankURL, pgsanURL,
-	)
-
 	// Build a lookup set of follower chatIDs to avoid extra DB calls per subscriber.
 	followerSet := make(map[int64]bool, len(followers))
 	for _, id := range followers {
@@ -133,33 +110,66 @@ func SendAlert(
 	}
 
 	for _, sub := range subs {
-		// Per-user amount filter.
-		if volume < sub.MinAmount {
-			continue
-		}
-		// Per-user trade count filter.
-		if trades >= sub.MaxTrades {
-			continue
-		}
-		// Per-user odds filter.
-		if odds < sub.MinOdds {
-			continue
-		}
-		// Per-user category filter (empty = all).
-		if len(sub.Categories) > 0 {
-			allowed := false
-			for _, cat := range sub.Categories {
-				if cat == meta.Category {
-					allowed = true
-					break
-				}
-			}
-			if !allowed {
+		isWatch := followerSet[sub.ChatID]
+
+		// Followers bypass all filters — they always get notifications for their watched wallets.
+		if !isWatch {
+			// Per-user amount filter.
+			if volume < sub.MinAmount {
 				continue
+			}
+			// Per-user trade count filter.
+			if trades >= sub.MaxTrades {
+				continue
+			}
+			// Per-user odds filter.
+			if odds < sub.MinOdds {
+				continue
+			}
+			// Per-user category filter (empty = all).
+			if len(sub.Categories) > 0 {
+				allowed := false
+				for _, cat := range sub.Categories {
+					if cat == meta.Category {
+						allowed = true
+						break
+					}
+				}
+				if !allowed {
+					continue
+				}
 			}
 		}
 
-		isWatch := followerSet[sub.ChatID]
+		// Customize alert header for followed wallets.
+		header := fmt.Sprintf("%s <b>КИТ-НОВИЧОК: %s</b>", meta.Emoji, strings.ToUpper(meta.Label))
+		if isWatch {
+			header = fmt.Sprintf("🔔 <b>ВАШ КИТ: %s</b>", strings.ToUpper(meta.Label))
+		}
+
+		text := fmt.Sprintf(
+			"%s\n\n"+
+				"💰 <b>Сумма:</b> $%.0f\n"+
+				"📊 <b>Коэф:</b> x%.2f (%.1f%%)\n"+
+				"📈 <b>Всего сделок:</b> %d\n"+
+				"👤 <b>Игрок:</b> <code>%s</code>\n"+
+				"%s\n\n"+
+				"🎯 <b>Рынок:</b> %s\n"+
+				"📌 <b>Ставка на:</b> %s\n\n"+
+				"🔗 <b>Ссылки:</b>\n"+
+				"• <a href='%s'>Профиль Polymarket</a>\n"+
+				"• <a href='%s'>Портфель DeBank</a>\n"+
+				"• <a href='%s'>PolygonScan</a>",
+			header,
+			volume, odds, probability,
+			trades,
+			name,
+			playerBlock,
+			safeTitle,
+			safeOutcome,
+			profileURL, debankURL, pgsanURL,
+		)
+
 		kb := AlertKeyboard(p.ProxyWallet, isWatch)
 
 		msg := tu.Message(tu.ID(sub.ChatID), text+
