@@ -8,6 +8,27 @@ The bot connects directly to Polymarket's WebSocket feed and processes every tra
 
 ---
 
+## Table of Contents
+
+- [Problem](#problem)
+- [Solution](#solution)
+- [Key Features](#key-features)
+  - [For users](#for-users)
+  - [Technical](#technical)
+- [Architecture](#architecture)
+- [Telegram Bot Interface](#telegram-bot-interface)
+- [Settings & Watchlist (Mini App)](#settings--watchlist-mini-app)
+- [Monitoring Dashboard](#monitoring-dashboard)
+- [Tech Stack](#tech-stack)
+- [Data Sources Used](#data-sources-used)
+- [Impact on Polymarket Ecosystem](#impact-on-polymarket-ecosystem)
+- [Current Status](#current-status)
+- [Roadmap](#roadmap)
+- [Grant Request](#grant-request)
+- [Links](#links)
+
+---
+
 ## Problem
 
 Polymarket has hundreds of active markets and thousands of trades per day. For a regular user, it is virtually impossible to manually monitor when a new high-stakes player enters a market. Yet these moments are among the most actionable signals in prediction markets — a large bet by an unknown wallet placing $10,000+ on a 30% outcome deserves attention.
