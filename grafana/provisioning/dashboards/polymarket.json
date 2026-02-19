@@ -675,8 +675,9 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(bot_link_clicks_total[$__range]))",
-          "legendFormat": "Клики"
+          "expr": "round(sum(increase(bot_link_clicks_total[$__range])))",
+          "legendFormat": "Клики",
+          "instant": true
         }
       ]
     },
@@ -1065,12 +1066,13 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(bot_link_clicks_total[$__range]))",
+          "expr": "round(sum(increase(bot_link_clicks_total[$__range])))",
           "legendFormat": "Всего",
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
-          }
+          },
+          "instant": true
         }
       ]
     },
@@ -1118,12 +1120,13 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(bot_link_clicks_total{type=\"market\"}[$__range]))",
+          "expr": "round(sum(increase(bot_link_clicks_total{type=\"market\"}[$__range])))",
           "legendFormat": "Market",
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
-          }
+          },
+          "instant": true
         }
       ]
     },
@@ -1171,12 +1174,13 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(bot_link_clicks_total{type=\"profile\"}[$__range]))",
+          "expr": "round(sum(increase(bot_link_clicks_total{type=\"profile\"}[$__range])))",
           "legendFormat": "Profile",
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
-          }
+          },
+          "instant": true
         }
       ]
     },
@@ -1224,12 +1228,13 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(bot_link_clicks_total{type=\"debank\"}[$__range]))",
+          "expr": "round(sum(increase(bot_link_clicks_total{type=\"debank\"}[$__range])))",
           "legendFormat": "DeBank",
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
-          }
+          },
+          "instant": true
         }
       ]
     },
@@ -1277,12 +1282,13 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(bot_link_clicks_total{type=\"pgsan\"}[$__range]))",
+          "expr": "round(sum(increase(bot_link_clicks_total{type=\"pgsan\"}[$__range])))",
           "legendFormat": "PolygonScan",
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
-          }
+          },
+          "instant": true
         }
       ]
     },
