@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,6 +41,8 @@ type WalletStats struct {
 // GetTradeCount returns the number of trades ever made by the wallet.
 // Returns 999 on any error (worker skips such wallets to avoid false positives).
 func GetTradeCount(ctx context.Context, client *http.Client, wallet string) int {
+	// Normalize wallet address to lowercase for consistent API calls and caching
+	wallet = strings.ToLower(wallet)
 	cacheKey := "trades:" + wallet
 	if val, ok := cache.GetString(ctx, cacheKey); ok {
 		count, err := strconv.Atoi(val)
@@ -73,6 +76,8 @@ func GetTradeCount(ctx context.Context, client *http.Client, wallet string) int 
 // GetWalletStats fetches enriched stats for display.
 // Cached 15 minutes per wallet. P&L and closed-positions are fetched in parallel.
 func GetWalletStats(ctx context.Context, client *http.Client, wallet string) *WalletStats {
+	// Normalize wallet address to lowercase for consistent API calls and caching
+	wallet = strings.ToLower(wallet)
 	cacheKey := "wstats:" + wallet
 	var cached WalletStats
 	if cache.GetJSON(ctx, cacheKey, &cached) {
