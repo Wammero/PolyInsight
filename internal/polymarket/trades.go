@@ -119,25 +119,39 @@ func GetWalletStats(ctx context.Context, client *http.Client, wallet string) *Wa
 		}
 	}()
 
-	// Goroutine 2: win/loss counts from closed positions.
-	// realizedPnl > 0 = win, realizedPnl <= 0 = loss.
+	// Goroutine 2: win/loss counts from closed positions via paginated API.
+	// The Polymarket API caps at 50 results per page (sorted by realizedPnl DESC),
+	// so a single limit=500 call only returns the top 50 wins — losses at higher
+	// offsets are never seen. We paginate until an empty page is returned.
 	go func() {
 		defer wg.Done()
-		resp, err := client.Get(fmt.Sprintf(
-			"https://data-api.polymarket.com/closed-positions?user=%s&limit=500", wallet,
-		))
-		if err != nil || resp == nil {
-			return
-		}
-		defer func() { io.Copy(io.Discard, resp.Body); resp.Body.Close() }()
-		if resp.StatusCode != 200 {
-			return
-		}
-		var closed []struct {
-			RealizedPnl float64 `json:"realizedPnl"`
-		}
-		if json.NewDecoder(resp.Body).Decode(&closed) == nil {
-			w, l := 0, 0
+		const pageSize = 50
+		const maxPages = 20 // cap at 1000 positions to avoid excessive API calls
+		w, l := 0, 0
+		for page := 0; page < maxPages; page++ {
+			offset := page * pageSize
+			url := fmt.Sprintf(
+				"https://data-api.polymarket.com/closed-positions?user=%s&limit=%d&offset=%d",
+				wallet, pageSize, offset,
+			)
+			resp, err := client.Get(url)
+			if err != nil || resp == nil {
+				break
+			}
+			if resp.StatusCode != 200 {
+				io.Copy(io.Discard, resp.Body)
+				resp.Body.Close()
+				break
+			}
+			var closed []struct {
+				RealizedPnl float64 `json:"realizedPnl"`
+			}
+			decErr := json.NewDecoder(resp.Body).Decode(&closed)
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+			if decErr != nil || len(closed) == 0 {
+				break
+			}
 			for _, pos := range closed {
 				if pos.RealizedPnl > 0 {
 					w++
@@ -145,10 +159,13 @@ func GetWalletStats(ctx context.Context, client *http.Client, wallet string) *Wa
 					l++
 				}
 			}
-			wins, losses = w, l
-			if w+l > 0 {
-				winRate = float64(w) / float64(w+l) * 100
+			if len(closed) < pageSize {
+				break // last page reached
 			}
+		}
+		wins, losses = w, l
+		if w+l > 0 {
+			winRate = float64(w) / float64(w+l) * 100
 		}
 	}()
 

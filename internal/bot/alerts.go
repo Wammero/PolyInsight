@@ -2,6 +2,8 @@ package bot
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"html"
 	"strings"
@@ -38,12 +40,14 @@ func SendAlert(
 	odds := 1.0 / p.Price
 	probability := p.Price * 100
 
-	// Short ID for click tracking: strip 0x prefix, take 20 hex chars (80-bit entropy).
-	// 20 chars vs original 12: collision probability drops from ~10^-14 to ~10^-24 per million txs.
-	shortID := strings.TrimPrefix(p.TransactionHash, "0x")
-	if len(shortID) > 20 {
-		shortID = shortID[:20]
-	}
+	// Short ID for click tracking: SHA-256 of (txHash + lowercase wallet), first 10 bytes = 20 hex chars.
+	// Using both txHash and wallet ensures uniqueness even when Polymarket batches multiple fills
+	// from different wallets into a single transaction (same txHash, different proxyWallet).
+	// Without the wallet component, all fills in the same tx share a shortID and ON CONFLICT DO NOTHING
+	// causes subsequent alerts to redirect to the wrong wallet's profile.
+	rawKey := strings.ToLower(p.TransactionHash + p.ProxyWallet)
+	h := sha256.Sum256([]byte(rawKey))
+	shortID := hex.EncodeToString(h[:10])
 
 	marketURL := fmt.Sprintf("https://polymarket.com/market/%s?utm_source=whalebot&utm_medium=telegram&utm_campaign=alert&tid=%s",
 		p.Slug, p.TransactionHash)
@@ -119,7 +123,9 @@ func SendAlert(
 				continue
 			}
 			// Per-user trade count filter.
-			if trades >= sub.MaxTrades {
+			// Use > (not >=) so that a user setting MaxTrades=5 includes wallets
+			// with exactly 5 trades (inclusive upper bound matches the UI label).
+			if trades > sub.MaxTrades {
 				continue
 			}
 			// Per-user odds filter.
