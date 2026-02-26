@@ -81,14 +81,12 @@ Polymarket WebSocket
    └────┬────┘
         │  per trade:
         │  1. Check watchlist (in-memory cache, 30s refresh)
-        │     ├─ If watched → SendFollowAlert (bypass all filters)
-        │     └─ If not watched → continue to filters ↓
-        │  2. Volume pre-filter (global minimum)
-        │  3. Ban-word filter (title)
-        │  4. Category metadata (Redis-cached)
-        │  5. Trade count → newbie check (Redis-cached)
+        │  2. Volume pre-filter — skipped for watched wallets, applied for everyone else
+        │  3. Ban-word filter (title) — applies to all trades incl. watched
+        │  4. Category metadata (Redis-cached) — applies to all
+        │  5. Trade count → newbie check (Redis-cached) — applies to all
         │  6. Wallet stats (Redis-cached, 15 min)
-        │  7. SendAlert → per-user filter + rate-limited queue
+        │  7. SendAlert → followed wallets bypass per-user filters (amount/trades/odds/cats)
         ▼
    Telegram Bot API (25 msg/sec rate-limited queue)
 ```
@@ -159,7 +157,7 @@ Real-time Prometheus + Grafana dashboard with comprehensive analytics:
 
 | Component | Technology |
 |-----------|-----------|
-| Language | Go 1.22 |
+| Language | Go 1.25 |
 | Telegram library | [telego](https://github.com/mymmrac/telego) |
 | Database | PostgreSQL 15 |
 | Cache | Redis 7 |
@@ -177,7 +175,7 @@ All data comes exclusively from public Polymarket APIs:
 - **WebSocket** `wss://ws-live-data.polymarket.com` — live trade feed
 - `data-api.polymarket.com/traded?user=` — trade count per wallet
 - `data-api.polymarket.com/v1/leaderboard?user=&timePeriod=ALL` — all-time P&L
-- `data-api.polymarket.com/closed-positions?user=&limit=500` — win/loss breakdown
+- `data-api.polymarket.com/closed-positions?user=&limit=50&offset=N` — win/loss breakdown (paginated; API caps at 50 per page sorted by P&L desc)
 - `gamma-api.polymarket.com/markets?slug=` — market category metadata
 
 ---
