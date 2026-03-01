@@ -53,7 +53,11 @@ func GetTradeCount(ctx context.Context, client *http.Client, wallet string) int 
 		return count
 	}
 
-	resp, err := client.Get("https://data-api.polymarket.com/traded?user=" + wallet)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://data-api.polymarket.com/traded?user="+wallet, nil)
+	if err != nil {
+		return 999
+	}
+	resp, err := client.Do(req)
 	if err != nil || resp == nil {
 		return 999
 	}
@@ -101,9 +105,12 @@ func GetWalletStats(ctx context.Context, client *http.Client, wallet string) *Wa
 	// Goroutine 1: all-time P&L from leaderboard endpoint.
 	go func() {
 		defer wg.Done()
-		resp, err := client.Get(fmt.Sprintf(
-			"https://data-api.polymarket.com/v1/leaderboard?user=%s&timePeriod=ALL", wallet,
-		))
+		url := fmt.Sprintf("https://data-api.polymarket.com/v1/leaderboard?user=%s&timePeriod=ALL", wallet)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err != nil {
+			return
+		}
+		resp, err := client.Do(req)
 		if err != nil || resp == nil {
 			return
 		}
@@ -130,11 +137,15 @@ func GetWalletStats(ctx context.Context, client *http.Client, wallet string) *Wa
 		w, l := 0, 0
 		for page := 0; page < maxPages; page++ {
 			offset := page * pageSize
-			url := fmt.Sprintf(
+			reqURL := fmt.Sprintf(
 				"https://data-api.polymarket.com/closed-positions?user=%s&limit=%d&offset=%d",
 				wallet, pageSize, offset,
 			)
-			resp, err := client.Get(url)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+			if err != nil {
+				break // context cancelled
+			}
+			resp, err := client.Do(req)
 			if err != nil || resp == nil {
 				break
 			}
@@ -155,7 +166,7 @@ func GetWalletStats(ctx context.Context, client *http.Client, wallet string) *Wa
 			for _, pos := range closed {
 				if pos.RealizedPnl > 0 {
 					w++
-				} else {
+				} else if pos.RealizedPnl < 0 {
 					l++
 				}
 			}

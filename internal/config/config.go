@@ -12,18 +12,12 @@ type Config struct {
 	BaseURL        string // public base URL for redirect tracking, e.g. https://mybot.example.com
 	MiniAppURL     string // GitHub Pages URL for the Telegram Mini App settings page
 	MinWhaleAmount float64
-	MinOdds        float64
 }
 
 func Load() *Config {
 	minAmount, _ := strconv.ParseFloat(os.Getenv("MIN_WHALE_AMOUNT"), 64)
 	if minAmount == 0 {
 		minAmount = 100 // absolute floor; per-user settings do the real filtering
-	}
-
-	minOdds, _ := strconv.ParseFloat(os.Getenv("MIN_ODDS"), 64)
-	if minOdds == 0 {
-		minOdds = 1.15
 	}
 
 	return &Config{
@@ -33,6 +27,5 @@ func Load() *Config {
 		BaseURL:        os.Getenv("BOT_BASE_URL"),
 		MiniAppURL:     os.Getenv("MINI_APP_URL"),
 		MinWhaleAmount: minAmount,
-		MinOdds:        minOdds,
 	}
 }

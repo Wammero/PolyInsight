@@ -3,6 +3,7 @@ package polymarket
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -33,14 +34,19 @@ func GetMeta(ctx context.Context, slug string, client *http.Client) *CategoryMet
 
 func fetchMeta(ctx context.Context, slug string, client *http.Client) (*CategoryMeta, bool) {
 	// Step 1: resolve market ID.
-	resp, err := client.Get("https://gamma-api.polymarket.com/markets?slug=" + slug)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://gamma-api.polymarket.com/markets?slug="+slug, nil)
+	if err != nil {
+		return nil, false
+	}
+	resp, err := client.Do(req)
 	if err != nil || resp == nil || resp.StatusCode != 200 {
 		if resp != nil {
+			io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 		}
 		return nil, false
 	}
-	defer resp.Body.Close()
+	defer func() { io.Copy(io.Discard, resp.Body); resp.Body.Close() }()
 	var markets []struct {
 		ID     string `json:"id"`
 		Active bool   `json:"active"`
@@ -53,14 +59,19 @@ func fetchMeta(ctx context.Context, slug string, client *http.Client) (*Category
 	}
 
 	// Step 2: fetch tags.
-	resp2, err := client.Get("https://gamma-api.polymarket.com/markets/" + markets[0].ID + "/tags")
+	req2, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://gamma-api.polymarket.com/markets/"+markets[0].ID+"/tags", nil)
+	if err != nil {
+		return nil, false
+	}
+	resp2, err := client.Do(req2)
 	if err != nil || resp2 == nil || resp2.StatusCode != 200 {
 		if resp2 != nil {
+			io.Copy(io.Discard, resp2.Body)
 			resp2.Body.Close()
 		}
 		return nil, false
 	}
-	defer resp2.Body.Close()
+	defer func() { io.Copy(io.Discard, resp2.Body); resp2.Body.Close() }()
 	var tags []struct {
 		ID    json.Number `json:"id"`
 		Slug  string      `json:"slug"`

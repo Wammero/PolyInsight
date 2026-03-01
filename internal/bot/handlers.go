@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"log"
 	"net"
 	"net/http"
@@ -31,7 +32,10 @@ var txHashRe = regexp.MustCompile(`^0x[0-9a-fA-F]{64}$`)
 
 // StartHandlers begins long-polling and routes all incoming updates.
 func StartHandlers(b *telego.Bot) {
-	updates, _ := b.UpdatesViaLongPolling(context.Background(), nil)
+	updates, err := b.UpdatesViaLongPolling(context.Background(), nil)
+	if err != nil {
+		log.Fatalf("long polling init: %v", err)
+	}
 	for u := range updates {
 		switch {
 		case u.Message != nil && u.Message.WebAppData != nil:
@@ -55,6 +59,14 @@ func HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		linkType = parts[1]
 	}
 	if shortID == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Whitelist linkType to prevent Prometheus cardinality explosion from arbitrary paths.
+	switch linkType {
+	case "market", "profile", "debank", "pgsan":
+	default:
 		http.NotFound(w, r)
 		return
 	}
@@ -264,7 +276,7 @@ func handleWatchlistCommand(b *telego.Bot, ctx context.Context, chatID int64) {
 			label = w.Wallet[:6] + "..." + w.Wallet[len(w.Wallet)-4:]
 		}
 		lines += fmt.Sprintf("%d. <a href='https://polymarket.com/profile/%s'>%s</a>\n",
-			i+1, w.Wallet, label)
+			i+1, html.EscapeString(w.Wallet), html.EscapeString(label))
 	}
 	lines += "\nУправляйте списком через ⚙️ Настройки."
 	b.SendMessage(ctx, tu.Message(tu.ID(chatID), lines).
@@ -432,6 +444,9 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 	// ── Wallet stats ─────────────────────────────────────────────────────
 	case strings.HasPrefix(data, "stats:"):
 		wallet := strings.TrimPrefix(data, "stats:")
+		if !walletRe.MatchString(wallet) {
+			return
+		}
 		stats := polymarket.GetWalletStats(ctx, httpClient, wallet)
 		b.SendMessage(ctx, tu.Message(tu.ID(chatID), FormatWalletStats(wallet, stats)).
 			WithParseMode(telego.ModeHTML).
@@ -440,6 +455,9 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 	// ── Watchlist ────────────────────────────────────────────────────────
 	case strings.HasPrefix(data, "watch:add:"):
 		wallet := strings.TrimPrefix(data, "watch:add:")
+		if !walletRe.MatchString(wallet) {
+			return
+		}
 		answered = true
 		err := db.AddWatch(ctx, chatID, wallet, "")
 		if err == db.ErrWatchlistFull {
@@ -474,6 +492,9 @@ func handleCallback(b *telego.Bot, cb *telego.CallbackQuery) {
 
 	case strings.HasPrefix(data, "watch:del:"):
 		wallet := strings.TrimPrefix(data, "watch:del:")
+		if !walletRe.MatchString(wallet) {
+			return
+		}
 		answered = true
 		if err := db.RemoveWatch(ctx, chatID, wallet); err != nil {
 			log.Printf("watch:del chatID=%d wallet=%s: %v", chatID, wallet, err)
@@ -654,6 +675,9 @@ func handleWebAppData(b *telego.Bot, msg *telego.Message) {
 			return
 		}
 		for _, wallet := range body.Wallets {
+			if !walletRe.MatchString(wallet) {
+				continue
+			}
 			if err := db.RemoveWatch(ctx, chatID, wallet); err != nil {
 				log.Printf("delete_watches chatID=%d wallet=%s: %v", chatID, wallet, err)
 			}

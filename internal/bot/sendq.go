@@ -3,7 +3,7 @@ package bot
 import (
 	"context"
 	"log"
-	"sync/atomic"
+	"sync"
 	"time"
 
 	"github.com/mymmrac/telego"
@@ -20,8 +20,9 @@ const (
 )
 
 var (
-	sendCh       chan *telego.SendMessageParams
-	sendChClosed atomic.Bool
+	sendCh    chan *telego.SendMessageParams
+	sendMu    sync.Mutex
+	sendDone  bool
 )
 
 // StartSendQueue starts the single rate-limited Telegram sender goroutine.
@@ -29,14 +30,18 @@ var (
 func StartSendQueue(b *telego.Bot) {
 	sendCh = make(chan *telego.SendMessageParams, sendQueueCap)
 	go func() {
-		ctx := context.Background()
 		for params := range sendCh {
 			metrics.SendQueueSize.Set(float64(len(sendCh)))
 
 			start := time.Now()
-			if _, err := b.SendMessage(ctx, params); err != nil {
+			// Per-message timeout prevents the entire send queue from stalling
+			// when the Telegram API hangs (e.g. network issues, 5xx errors).
+			// Without this, a single stuck SendMessage blocks all 20K queued messages.
+			sendCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			if _, err := b.SendMessage(sendCtx, params); err != nil {
 				log.Printf("sendq: %v", err)
 			}
+			cancel()
 
 			// Rate limiting: ensure at least sendInterval between sends.
 			// If Telegram API responds faster than 40ms, sleep the remainder.
@@ -50,9 +55,11 @@ func StartSendQueue(b *telego.Bot) {
 
 // Enqueue adds a message to the rate-limited send queue.
 // Non-blocking: if the queue is full (circuit breaker), the message is dropped and counted.
-// Safe to call concurrently with DrainAndClose — drops silently if the queue is already closed.
+// Safe to call concurrently with DrainAndClose — the mutex prevents send-on-closed-channel panics.
 func Enqueue(params *telego.SendMessageParams) {
-	if sendChClosed.Load() {
+	sendMu.Lock()
+	defer sendMu.Unlock()
+	if sendDone {
 		return
 	}
 	select {
@@ -69,8 +76,8 @@ func DrainAndClose() {
 	for len(sendCh) > 0 && time.Now().Before(deadline) {
 		time.Sleep(100 * time.Millisecond)
 	}
-	// Mark closed before closing the channel so concurrent Enqueue calls
-	// see the flag and return early, preventing "send on closed channel" panics.
-	sendChClosed.Store(true)
+	sendMu.Lock()
+	sendDone = true
 	close(sendCh)
+	sendMu.Unlock()
 }

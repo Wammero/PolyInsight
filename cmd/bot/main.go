@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -59,10 +60,17 @@ func main() {
 	// Telegram update handlers (commands + callback queries + Mini App data).
 	go botpkg.StartHandlers(tgBot)
 
-	// HTTP server: Prometheus metrics + optional redirect tracking.
+	// HTTP server: Prometheus metrics + pprof + optional redirect tracking.
 	go func() {
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", promhttp.Handler())
+		// pprof endpoints for runtime profiling (goroutine leaks, memory, CPU).
+		// Usage: go tool pprof http://host:2112/debug/pprof/heap
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 		if cfg.BaseURL != "" {
 			mux.HandleFunc("/r/", botpkg.HandleRedirect)
 			log.Printf("Redirect tracking enabled at %s/r/<shortID>", cfg.BaseURL)
@@ -94,15 +102,26 @@ func main() {
 		go tracker.Worker(i, jobs, tgBot, cfg)
 	}
 
-	// WebSocket with automatic reconnection.
+	// WebSocket with automatic reconnection and exponential backoff.
+	// If the connection was healthy (lasted >1 min), backoff resets to 5s.
+	// On rapid failures, backoff doubles up to 5 minutes to avoid API hammering.
 	go func() {
+		backoff := 5 * time.Second
+		const maxBackoff = 5 * time.Minute
 		for {
 			log.Println("Connecting to Polymarket WebSocket...")
+			start := time.Now()
 			if err := tracker.StartSocket(jobs); err != nil {
 				log.Printf("WebSocket error: %v", err)
 				metrics.WSReconnects.Inc()
 			}
-			time.Sleep(5 * time.Second)
+			if time.Since(start) > time.Minute {
+				backoff = 5 * time.Second // healthy session — reset
+			} else {
+				backoff = min(backoff*2, maxBackoff)
+			}
+			log.Printf("Reconnecting in %v...", backoff)
+			time.Sleep(backoff)
 		}
 	}()
 

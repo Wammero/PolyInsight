@@ -33,8 +33,6 @@ type wsMessage struct {
 
 // Worker reads raw trade bytes from jobs, applies filters, and dispatches alerts.
 func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
-	ctx := context.Background()
-
 	for raw := range jobs {
 		var msg wsMessage
 		if err := json.Unmarshal(raw, &msg); err != nil || msg.Type != "trades" {
@@ -49,6 +47,12 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 		// regardless of global volume thresholds (e.g., $10 bet when MinWhaleAmount=$100).
 		followers := GetFollowers(p.ProxyWallet)
 		isWatched := len(followers) > 0
+
+		// Guard against zero/negative price: division by zero in odds calculation (1/Price).
+		// This can happen with malformed WebSocket data or cancelled markets.
+		if p.Price <= 0 || p.Price > 1 {
+			continue
+		}
 
 		// Global pre-filter: only absolute minimum volume (skip for watched wallets).
 		if !isWatched && volume < cfg.MinWhaleAmount {
@@ -65,10 +69,16 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 			continue
 		}
 
+		// Per-trade timeout: caps total processing time for a single trade.
+		// Without this, a worker can hang for 200+ seconds when GetWalletStats
+		// paginates 20 pages × 10s HTTP timeout on a slow API.
+		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+
 		// Fetch category metadata (cached).
 		meta := polymarket.GetMeta(ctx, p.Slug, sharedClient)
 		if meta == nil {
 			metrics.FilteredNoMeta.Inc()
+			cancel()
 			continue
 		}
 
@@ -76,6 +86,7 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 		trades := polymarket.GetTradeCount(ctx, sharedClient, p.ProxyWallet)
 		if trades == 999 {
 			metrics.FilteredAPIErr.Inc()
+			cancel()
 			continue // API error — skip to avoid false positives
 		}
 
@@ -92,6 +103,7 @@ func Worker(id int, jobs <-chan []byte, b *telego.Bot, cfg *config.Config) {
 		}
 
 		metrics.WorkerDuration.Observe(time.Since(startTime).Seconds())
+		cancel()
 	}
 }
 

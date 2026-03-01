@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html"
+	"net/url"
 	"strings"
 	"time"
 
@@ -50,7 +51,7 @@ func SendAlert(
 	shortID := hex.EncodeToString(h[:10])
 
 	marketURL := fmt.Sprintf("https://polymarket.com/market/%s?utm_source=whalebot&utm_medium=telegram&utm_campaign=alert&tid=%s",
-		p.Slug, p.TransactionHash)
+		url.PathEscape(p.Slug), url.QueryEscape(p.TransactionHash))
 
 	// Register alert for click tracking (first occurrence wins due to ON CONFLICT DO NOTHING).
 	db.RegisterAlert(ctx, shortID, p.ProxyWallet, p.Slug, marketURL, p.TransactionHash, meta.Category, 0)
@@ -233,7 +234,7 @@ func SendFollowAlert(
 		html.EscapeString(strings.ToUpper(p.Outcome)),
 		html.EscapeString(p.Title),
 		trades, wrLine,
-		p.ProxyWallet,
+		url.PathEscape(p.ProxyWallet),
 	)
 
 	for _, chatID := range followers {
@@ -250,7 +251,8 @@ func fmtPnL(v float64) string {
 	}
 	sign := "+"
 	if v < 0 {
-		sign = ""
+		sign = "-"
+		v = -v
 	}
 	return fmt.Sprintf("%s$%.0f", sign, v)
 }

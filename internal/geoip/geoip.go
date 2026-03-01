@@ -3,6 +3,7 @@ package geoip
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"time"
@@ -30,11 +31,15 @@ func Country(ctx context.Context, ip string) string {
 	}
 
 	// ip-api.com: free, no key required, 45 req/min.
-	resp, err := client.Get("http://ip-api.com/json/" + ip + "?fields=countryCode")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://ip-api.com/json/"+ip+"?fields=countryCode", nil)
+	if err != nil {
+		return "unknown"
+	}
+	resp, err := client.Do(req)
 	if err != nil || resp == nil {
 		return "unknown"
 	}
-	defer resp.Body.Close()
+	defer func() { io.Copy(io.Discard, resp.Body); resp.Body.Close() }()
 
 	var result struct {
 		CountryCode string `json:"countryCode"`
